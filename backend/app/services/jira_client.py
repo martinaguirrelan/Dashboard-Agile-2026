@@ -84,8 +84,9 @@ def fetch_epics_for_project(project_key: str) -> list[dict[str, Any]]:
     al esquema de jira_epics.
     """
     jql = f'project = "{project_key}" AND issuetype = Epic ORDER BY created DESC'
-    url = f"{settings.jira_base_url}/rest/api/3/search"
-    fields = ",".join([
+    # Jira Cloud deprecó GET /search — ahora usa POST /search/jql
+    url = f"{settings.jira_base_url}/rest/api/3/search/jql"
+    fields = [
         "summary",
         "description",
         "duedate",
@@ -93,25 +94,27 @@ def fetch_epics_for_project(project_key: str) -> list[dict[str, Any]]:
         "assignee",
         "priority",
         settings.jira_field_start_date,
-    ])
+    ]
 
     epics: list[dict] = []
-    start_at = 0
+    next_page_token: str | None = None
 
     with httpx.Client(headers=_headers(), timeout=30) as client:
         while True:
-            params: dict[str, Any] = {
+            body: dict[str, Any] = {
                 "jql": jql,
-                "startAt": start_at,
                 "maxResults": 100,
                 "fields": fields,
             }
+            if next_page_token:
+                body["nextPageToken"] = next_page_token
+
             try:
-                resp = client.get(url, params=params)
+                resp = client.post(url, json=body)
                 resp.raise_for_status()
             except httpx.HTTPStatusError as exc:
                 status_code = exc.response.status_code
-                if status_code == 400:
+                if status_code in (400, 404):
                     logger.warning(
                         "⚠️  Proyecto '%s' no encontrado en Jira o JQL inválido. (%s)",
                         project_key, exc.response.text[:200],
@@ -142,8 +145,8 @@ def fetch_epics_for_project(project_key: str) -> list[dict[str, Any]]:
                     "project_key":      project_key,
                 })
 
-            start_at += len(issues)
-            if start_at >= data.get("total", 0):
+            next_page_token = data.get("nextPageToken")
+            if not next_page_token or len(issues) < 100:
                 break
 
     logger.info("  ✅ %s → %d épicas obtenidas.", project_key, len(epics))
