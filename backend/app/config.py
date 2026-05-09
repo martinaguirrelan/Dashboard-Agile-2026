@@ -26,5 +26,14 @@ class Settings(BaseSettings):
     use_supabase_storage: bool = True
     supabase_storage_bucket: str = "vouchers"
 
+    # Jira Cloud (US-1)
+    jira_api_token: str = ""
+    jira_user_email: str = ""
+    jira_base_url: str = "https://your-org.atlassian.net"
+    jira_field_start_date: str = "customfield_10015"  # campo "Start date" en Jira
+
+    # Sync scheduler (US-4)
+    polling_interval_min: int = 30
+
 
 settings = Settings()  # type: ignore[call-arg]

@@ -1,7 +1,10 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Layout from './components/Layout/Layout'
-import HomePage from './pages/HomePage'
+import DashboardPage from './pages/DashboardPage'
+import DoraMetricsPage from './pages/DoraMetricsPage'
+import RoadmapPage from './pages/RoadmapPage'
+import TeamHealthPage from './pages/TeamHealthPage'
 import LoginPage from './pages/LoginPage'
 import AdminPage from './pages/AdminPage'
 
@@ -19,7 +22,10 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route element={<Layout />}>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/"        element={<DashboardPage />} />
+        <Route path="/dora"    element={<DoraMetricsPage />} />
+        <Route path="/roadmap" element={<RoadmapPage />} />
+        <Route path="/team"    element={<TeamHealthPage />} />
         <Route
           path="/admin"
           element={
