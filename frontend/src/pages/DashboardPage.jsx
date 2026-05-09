@@ -23,6 +23,64 @@ function groupByStatus(epics) {
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 
+const QUARTERS = ['Q1', 'Q2', 'Q3', 'Q4']
+const YEARS    = ['2024', '2025', '2026', '2027']
+
+const MOCK_EPICS = [
+  {
+    id: 'mock-1',
+    jira_issue_id: 'SQP-42',
+    epic_name: 'Checkout Redesign — Nuevo Flujo de Pago',
+    description: 'Rediseño completo del flujo de pago para reducir abandono en un 20%.',
+    status: 'In Progress',
+    assignee: 'Banca Retail',
+    project_key: 'SQP',
+    priority_status: 'High',
+    priority_quarter: 'Q2 2026',
+    start_date: '2026-04-01T00:00:00Z',
+    due_date: '2026-06-30T00:00:00Z',
+    lead_time_days: 90,
+    created_at: '2026-03-15T00:00:00Z',
+    updated_at: '2026-05-01T00:00:00Z',
+  },
+  {
+    id: 'mock-2',
+    jira_issue_id: 'SQV-18',
+    epic_name: 'Autenticación Biométrica Mobile',
+    description: 'Implementación de Face ID y huella dactilar para acceso seguro a la app.',
+    status: 'Done',
+    assignee: 'Tecnología',
+    project_key: 'SQV',
+    priority_status: 'Medium',
+    priority_quarter: 'Q1 2026',
+    start_date: '2026-01-10T00:00:00Z',
+    due_date: '2026-03-28T00:00:00Z',
+    lead_time_days: 77,
+    created_at: '2026-01-05T00:00:00Z',
+    updated_at: '2026-03-28T00:00:00Z',
+  },
+]
+
+function SelectFilter({ label, value, onChange, children }) {
+  return (
+    <div className="relative flex-1 max-w-[200px]">
+      <label className="absolute -top-2 left-2 px-1 bg-white text-[10px] font-bold text-primary uppercase">
+        {label}
+      </label>
+      <select
+        className="w-full pl-3 pr-8 py-2 bg-white border border-outline-variant rounded-lg text-body-base text-on-surface appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        {children}
+      </select>
+      <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-secondary pointer-events-none text-sm">
+        expand_more
+      </span>
+    </div>
+  )
+}
+
 function FilterBar({ filters, onChange, onClear }) {
   return (
     <div className="bg-white p-4 rounded border border-outline-variant shadow-card flex items-center gap-6 mb-2">
@@ -31,42 +89,26 @@ function FilterBar({ filters, onChange, onClear }) {
         <span className="text-label-caps text-secondary uppercase">Filtros Ejecutivos:</span>
       </div>
       <div className="flex flex-wrap gap-4 flex-grow">
-        <div className="relative flex-1 max-w-[200px]">
-          <label className="absolute -top-2 left-2 px-1 bg-white text-[10px] font-bold text-primary uppercase">
-            Estado
-          </label>
-          <select
-            className="w-full pl-3 pr-8 py-2 bg-white border border-outline-variant rounded-lg text-body-base text-on-surface appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-            value={filters.status}
-            onChange={(e) => onChange({ ...filters, status: e.target.value })}
-          >
-            <option value="">Todos los estados</option>
-            {STATUS_COLUMNS.map((c) => (
-              <option key={c.key} value={c.key}>{c.label}</option>
-            ))}
-          </select>
-          <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-secondary pointer-events-none text-sm">
-            expand_more
-          </span>
-        </div>
-        <div className="relative flex-1 max-w-[200px]">
-          <label className="absolute -top-2 left-2 px-1 bg-white text-[10px] font-bold text-primary uppercase">
-            Proyecto
-          </label>
-          <select
-            className="w-full pl-3 pr-8 py-2 bg-white border border-outline-variant rounded-lg text-body-base text-on-surface appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-            value={filters.projectKey}
-            onChange={(e) => onChange({ ...filters, projectKey: e.target.value })}
-          >
-            <option value="">Todos los proyectos</option>
-            {filters._projects.map((p) => (
-              <option key={p.key} value={p.key}>{p.name || p.key}</option>
-            ))}
-          </select>
-          <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-secondary pointer-events-none text-sm">
-            expand_more
-          </span>
-        </div>
+        <SelectFilter label="VP" value={filters.vp} onChange={(v) => onChange({ ...filters, vp: v })}>
+          <option value="">Todas las VPs</option>
+          {filters._vps.map((vp) => <option key={vp} value={vp}>{vp}</option>)}
+        </SelectFilter>
+
+        <SelectFilter label="Squad" value={filters.squad} onChange={(v) => onChange({ ...filters, squad: v })}>
+          <option value="">Todos los Squads</option>
+          {filters._squads.map((s) => <option key={s} value={s}>{s}</option>)}
+        </SelectFilter>
+
+        <SelectFilter label="Trimestre de Inicio" value={filters.quarter} onChange={(v) => onChange({ ...filters, quarter: v })}>
+          <option value="">Todos los trimestres</option>
+          {QUARTERS.map((q) => <option key={q} value={q}>{q}</option>)}
+        </SelectFilter>
+
+        <SelectFilter label="Año" value={filters.year} onChange={(v) => onChange({ ...filters, year: v })}>
+          <option value="">Todos los años</option>
+          {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
+        </SelectFilter>
+
       </div>
       <button
         onClick={onClear}
@@ -255,22 +297,37 @@ export default function DashboardPage() {
   const [syncStatus, setSyncStatus] = useState(null)
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
-  const [filters, setFilters] = useState({ status: '', projectKey: '', _projects: [] })
+  const [filters, setFilters] = useState({
+    vp: '', squad: '', quarter: '', year: '',
+    _vps: [], _squads: [], _projects: [],
+  })
 
   useEffect(() => {
-    Promise.all([getEpics(), getEpicsStats(), getSyncStatus()])
-      .then(([epicsData, statsData, syncData]) => {
-        setEpics(epicsData)
+    Promise.all([
+      getEpics().catch(() => []),
+      getEpicsStats().catch(() => null),
+      getSyncStatus().catch(() => ({ projects: [] })),
+    ]).then(([epicsData, statsData, syncData]) => {
+        const data = epicsData.length > 0 ? epicsData : MOCK_EPICS
+        setEpics(data)
         setStats(statsData)
         setSyncStatus(syncData)
-        setFilters((f) => ({ ...f, _projects: syncData.projects || [] }))
+        const vps    = [...new Set(data.map((e) => e.assignee).filter(Boolean))].sort()
+        const squads = [...new Set(data.map((e) => e.project_key).filter(Boolean))].sort()
+        setFilters((f) => ({ ...f, _vps: vps, _squads: squads, _projects: syncData.projects || [] }))
       })
       .finally(() => setLoading(false))
   }, [])
 
   const filteredEpics = epics.filter((e) => {
-    if (filters.status && e.status !== filters.status) return false
-    if (filters.projectKey && e.project_key !== filters.projectKey) return false
+    if (filters.vp    && e.assignee    !== filters.vp)    return false
+    if (filters.squad && e.project_key !== filters.squad)  return false
+    if (filters.quarter || filters.year) {
+      const pq = e.priority_quarter ?? ''          // ej. "Q2 2026"
+      const [pqQ, pqY] = pq.split(' ')
+      if (filters.quarter && pqQ !== filters.quarter) return false
+      if (filters.year    && pqY !== filters.year)    return false
+    }
     return true
   })
 
@@ -312,7 +369,7 @@ export default function DashboardPage() {
       <FilterBar
         filters={filters}
         onChange={setFilters}
-        onClear={() => setFilters((f) => ({ ...f, status: '', projectKey: '' }))}
+        onClear={() => setFilters((f) => ({ ...f, vp: '', squad: '', quarter: '', year: '' }))}
       />
 
       {/* Summary Header */}
