@@ -8,6 +8,18 @@ from ..schemas.jira_epic import ConfigProjectOut, JiraEpicOut
 router = APIRouter(prefix="/epics", tags=["epics"])
 
 
+@router.get("/vps", response_model=list[str])
+def list_vps(db: Session = Depends(get_db)):
+    rows = (
+        db.query(ConfigProject.vp)
+        .filter(ConfigProject.is_active.is_(True), ConfigProject.vp.isnot(None))
+        .distinct()
+        .order_by(ConfigProject.vp)
+        .all()
+    )
+    return [r[0] for r in rows]
+
+
 @router.get("/projects", response_model=list[ConfigProjectOut])
 def list_projects(db: Session = Depends(get_db)):
     return (

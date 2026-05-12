@@ -8,6 +8,7 @@ class ConfigProjectOut(BaseModel):
     id: UUID
     project_key: str
     project_name: str | None
+    vp: str | None
     is_active: bool
     created_at: datetime
 

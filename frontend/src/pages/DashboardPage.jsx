@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getEpics, getEpicsStats, getProjects } from '../api/epics'
+import { getEpics, getEpicsStats, getProjects, getVps } from '../api/epics'
 import { getSyncStatus, triggerSync } from '../api/sync'
 import { useAuth } from '../context/AuthContext'
 import dayjs from 'dayjs'
@@ -55,7 +55,18 @@ function SelectFilter({ label, value, onChange, children }) {
   )
 }
 
-function FilterBar({ filters, projects, onChange, onClear }) {
+function FilterBar({ filters, vps, projects, onChange, onClear }) {
+  // Squads visibles: si hay VP seleccionada, solo los de esa VP
+  const visibleSquads = filters.vp
+    ? projects.filter((p) => p.vp === filters.vp)
+    : projects
+
+  function handleVpChange(v) {
+    // Al cambiar VP, resetear squad si ya no pertenece a la nueva VP
+    const squadStillValid = v === '' || projects.some((p) => p.project_key === filters.squad && p.vp === v)
+    onChange({ ...filters, vp: v, squad: squadStillValid ? filters.squad : '' })
+  }
+
   return (
     <div className="bg-white p-4 rounded border border-outline-variant shadow-card mb-2">
       <div className="flex items-center gap-2 mb-3">
@@ -63,15 +74,14 @@ function FilterBar({ filters, projects, onChange, onClear }) {
         <span className="text-label-caps text-secondary uppercase">Filtros Ejecutivos:</span>
       </div>
       <div className="flex flex-wrap gap-3 items-end">
-        <SelectFilter label="VP" value={filters.vp} onChange={(v) => onChange({ ...filters, vp: v })}>
+        <SelectFilter label="VP" value={filters.vp} onChange={handleVpChange}>
           <option value="">Todas las VPs</option>
-          {filters._vps.map((vp) => <option key={vp} value={vp}>{vp}</option>)}
+          {vps.map((vp) => <option key={vp} value={vp}>{vp}</option>)}
         </SelectFilter>
 
-        {/* US-2: Squad cargado dinámicamente desde config_projects */}
         <SelectFilter label="Squad" value={filters.squad} onChange={(v) => onChange({ ...filters, squad: v })}>
           <option value="">Todos los Squads</option>
-          {projects.map((p) => (
+          {visibleSquads.map((p) => (
             <option key={p.project_key} value={p.project_key}>{p.project_name || p.project_key}</option>
           ))}
         </SelectFilter>
@@ -276,16 +286,14 @@ function InitiativesTable({ epics }) {
 
 export default function DashboardPage() {
   const { isAdmin, token } = useAuth()
-  const [epics, setEpics]         = useState([])
-  const [stats, setStats]         = useState(null)
+  const [epics, setEpics]           = useState([])
+  const [stats, setStats]           = useState(null)
   const [syncStatus, setSyncStatus] = useState(null)
-  const [projects, setProjects]   = useState([])
-  const [loading, setLoading]     = useState(true)
-  const [syncing, setSyncing]     = useState(false)
-  const [filters, setFilters]     = useState({
-    vp: '', squad: '', quarter: '', year: '',
-    _vps: [],
-  })
+  const [projects, setProjects]     = useState([])
+  const [vps, setVps]               = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [syncing, setSyncing]       = useState(false)
+  const [filters, setFilters]       = useState({ vp: '', squad: '', quarter: '', year: '' })
 
   useEffect(() => {
     Promise.all([
@@ -293,20 +301,23 @@ export default function DashboardPage() {
       getEpicsStats().catch(() => null),
       getSyncStatus().catch(() => ({ projects: [] })),
       getProjects().catch(() => []),
-    ]).then(([epicsData, statsData, syncData, projectsData]) => {
+      getVps().catch(() => []),
+    ]).then(([epicsData, statsData, syncData, projectsData, vpsData]) => {
       setEpics(epicsData)
       setStats(statsData)
       setSyncStatus(syncData)
       setProjects(projectsData)
-      const vps = [...new Set(epicsData.map((e) => e.assignee).filter(Boolean))].sort()
-      setFilters((f) => ({ ...f, _vps: vps }))
+      setVps(vpsData)
     }).finally(() => setLoading(false))
   }, [])
 
-  // US-2: Squad filtra por project_key, año/quarter usan campos estructurados (US-3)
+  // VP filtra por el campo vp del proyecto; Squad por project_key; año/quarter por campos ETL
   const filteredEpics = epics.filter((e) => {
-    if (filters.vp    && e.assignee    !== filters.vp)    return false
-    if (filters.squad && e.project_key !== filters.squad)  return false
+    if (filters.squad && e.project_key !== filters.squad) return false
+    if (filters.vp) {
+      const proj = projects.find((p) => p.project_key === e.project_key)
+      if (!proj || proj.vp !== filters.vp) return false
+    }
     if (filters.quarter && String(e.quarter) !== filters.quarter) return false
     if (filters.year    && String(e.year)    !== filters.year)    return false
     return true
@@ -324,8 +335,6 @@ export default function DashboardPage() {
       setEpics(epicsData)
       setStats(statsData)
       setSyncStatus(syncData)
-      const vps = [...new Set(epicsData.map((e) => e.assignee).filter(Boolean))].sort()
-      setFilters((f) => ({ ...f, _vps: vps }))
     } finally {
       setSyncing(false)
     }
@@ -352,9 +361,10 @@ export default function DashboardPage() {
       {/* Filter Bar */}
       <FilterBar
         filters={filters}
+        vps={vps}
         projects={projects}
         onChange={setFilters}
-        onClear={() => setFilters((f) => ({ ...f, vp: '', squad: '', quarter: '', year: '' }))}
+        onClear={() => setFilters({ vp: '', squad: '', quarter: '', year: '' })}
       />
 
       {/* Summary Header */}

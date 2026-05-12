@@ -17,3 +17,8 @@ export async function getProjects() {
   const { data } = await client.get('/epics/projects')
   return data
 }
+
+export async function getVps() {
+  const { data } = await client.get('/epics/vps')
+  return data
+}
