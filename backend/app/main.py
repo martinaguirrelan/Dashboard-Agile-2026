@@ -15,8 +15,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-Base.metadata.create_all(bind=engine)
-
 app = FastAPI(
     title="Agile Health Dashboard",
     version="1.0.0",
@@ -45,6 +43,12 @@ _scheduler = BackgroundScheduler(timezone="UTC")
 
 @app.on_event("startup")
 def _start_scheduler() -> None:
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("✅ Tablas verificadas/creadas en base de datos.")
+    except Exception as exc:
+        logger.error("❌ Error al crear tablas en DB: %s", exc)
+
     from .services.sync_service import run_sync
     interval = settings.polling_interval_min
     _scheduler.add_job(run_sync, "interval", minutes=interval, id="jira_sync", replace_existing=True)
