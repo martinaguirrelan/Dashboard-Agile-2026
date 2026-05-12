@@ -27,6 +27,8 @@ class JiraEpicOut(BaseModel):
     lead_time_days: int | None
     status: str | None
     assignee: str | None
+    year: int | None
+    quarter: str | None
     created_at: datetime
     updated_at: datetime
 

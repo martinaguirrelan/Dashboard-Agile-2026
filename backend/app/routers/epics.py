@@ -2,10 +2,20 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models.jira_epic import JiraEpic
-from ..schemas.jira_epic import JiraEpicOut
+from ..models.jira_epic import ConfigProject, JiraEpic
+from ..schemas.jira_epic import ConfigProjectOut, JiraEpicOut
 
 router = APIRouter(prefix="/epics", tags=["epics"])
+
+
+@router.get("/projects", response_model=list[ConfigProjectOut])
+def list_projects(db: Session = Depends(get_db)):
+    return (
+        db.query(ConfigProject)
+        .filter(ConfigProject.is_active.is_(True))
+        .order_by(ConfigProject.project_name)
+        .all()
+    )
 
 
 @router.get("/", response_model=list[JiraEpicOut])

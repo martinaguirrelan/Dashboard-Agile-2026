@@ -12,3 +12,8 @@ export async function getEpicsStats() {
   const { data } = await client.get('/api/epics/stats')
   return data
 }
+
+export async function getProjects() {
+  const { data } = await client.get('/api/epics/projects')
+  return data
+}

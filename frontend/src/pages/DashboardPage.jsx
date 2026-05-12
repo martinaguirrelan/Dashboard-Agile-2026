@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getEpics, getEpicsStats } from '../api/epics'
+import { getEpics, getEpicsStats, getProjects } from '../api/epics'
 import { getSyncStatus, triggerSync } from '../api/sync'
 import { useAuth } from '../context/AuthContext'
 import dayjs from 'dayjs'
@@ -26,49 +26,23 @@ function groupByStatus(epics) {
 const QUARTERS = ['Q1', 'Q2', 'Q3', 'Q4']
 const YEARS    = ['2024', '2025', '2026', '2027']
 
-const MOCK_EPICS = [
-  {
-    id: 'mock-1',
-    jira_issue_id: 'SQP-42',
-    epic_name: 'Checkout Redesign — Nuevo Flujo de Pago',
-    description: 'Rediseño completo del flujo de pago para reducir abandono en un 20%.',
-    status: 'In Progress',
-    assignee: 'Banca Retail',
-    project_key: 'SQP',
-    priority_status: 'High',
-    priority_quarter: 'Q2 2026',
-    start_date: '2026-04-01T00:00:00Z',
-    due_date: '2026-06-30T00:00:00Z',
-    lead_time_days: 90,
-    created_at: '2026-03-15T00:00:00Z',
-    updated_at: '2026-05-01T00:00:00Z',
-  },
-  {
-    id: 'mock-2',
-    jira_issue_id: 'SQV-18',
-    epic_name: 'Autenticación Biométrica Mobile',
-    description: 'Implementación de Face ID y huella dactilar para acceso seguro a la app.',
-    status: 'Done',
-    assignee: 'Tecnología',
-    project_key: 'SQV',
-    priority_status: 'Medium',
-    priority_quarter: 'Q1 2026',
-    start_date: '2026-01-10T00:00:00Z',
-    due_date: '2026-03-28T00:00:00Z',
-    lead_time_days: 77,
-    created_at: '2026-01-05T00:00:00Z',
-    updated_at: '2026-03-28T00:00:00Z',
-  },
-]
+function EmptyState({ icon = 'inbox', message = 'No hay datos disponibles' }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 gap-3 text-on-surface-variant">
+      <span className="material-symbols-outlined text-5xl opacity-40">{icon}</span>
+      <p className="text-body-base opacity-60">{message}</p>
+    </div>
+  )
+}
 
 function SelectFilter({ label, value, onChange, children }) {
   return (
-    <div className="relative flex-1 max-w-[200px]">
+    <div className="relative flex-1 min-w-[140px] max-w-[200px]">
       <label className="absolute -top-2 left-2 px-1 bg-white text-[10px] font-bold text-primary uppercase">
         {label}
       </label>
       <select
-        className="w-full pl-3 pr-8 py-2 bg-white border border-outline-variant rounded-lg text-body-base text-on-surface appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+        className="w-full pl-3 pr-8 py-2 bg-white border border-outline-variant rounded-lg text-body-base text-on-surface appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[44px]"
         value={value}
         onChange={(e) => onChange(e.target.value)}
       >
@@ -81,7 +55,7 @@ function SelectFilter({ label, value, onChange, children }) {
   )
 }
 
-function FilterBar({ filters, onChange, onClear }) {
+function FilterBar({ filters, projects, onChange, onClear }) {
   return (
     <div className="bg-white p-4 rounded border border-outline-variant shadow-card mb-2">
       <div className="flex items-center gap-2 mb-3">
@@ -94,12 +68,15 @@ function FilterBar({ filters, onChange, onClear }) {
           {filters._vps.map((vp) => <option key={vp} value={vp}>{vp}</option>)}
         </SelectFilter>
 
+        {/* US-2: Squad cargado dinámicamente desde config_projects */}
         <SelectFilter label="Squad" value={filters.squad} onChange={(v) => onChange({ ...filters, squad: v })}>
           <option value="">Todos los Squads</option>
-          {filters._squads.map((s) => <option key={s} value={s}>{s}</option>)}
+          {projects.map((p) => (
+            <option key={p.project_key} value={p.project_key}>{p.project_name || p.project_key}</option>
+          ))}
         </SelectFilter>
 
-        <SelectFilter label="Trimestre de Inicio" value={filters.quarter} onChange={(v) => onChange({ ...filters, quarter: v })}>
+        <SelectFilter label="Trimestre" value={filters.quarter} onChange={(v) => onChange({ ...filters, quarter: v })}>
           <option value="">Todos los trimestres</option>
           {QUARTERS.map((q) => <option key={q} value={q}>{q}</option>)}
         </SelectFilter>
@@ -172,7 +149,7 @@ function EpicCard({ epic, isDone }) {
   )
 }
 
-function KanbanBoard({ grouped }) {
+function KanbanBoard({ grouped, hasData }) {
   return (
     <section className="bg-white p-6 rounded border border-outline-variant shadow-card">
       <div className="flex justify-between items-center mb-6">
@@ -185,36 +162,39 @@ function KanbanBoard({ grouped }) {
         </button>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 overflow-x-auto pb-2">
-        {STATUS_COLUMNS.map((col) => {
-          const items = grouped[col.key] || []
-          const isDone = col.key === 'Done'
-          return (
-            <div key={col.key} className="flex flex-col gap-3">
-              <div className="flex items-center justify-between border-b border-outline-variant pb-2 mb-1">
-                <span className={`text-label-caps ${col.accent} uppercase`}>{col.label}</span>
-                <span className={`text-data-label ${col.badge} px-2 rounded-full`}>{items.length}</span>
+      {!hasData ? (
+        <EmptyState icon="view_kanban" message="Sin épicas para mostrar. Ejecuta la sincronización con Jira." />
+      ) : (
+        <div className="flex flex-col md:flex-row gap-4 overflow-x-auto pb-2">
+          {STATUS_COLUMNS.map((col) => {
+            const items = grouped[col.key] || []
+            const isDone = col.key === 'Done'
+            return (
+              <div key={col.key} className="flex flex-col gap-3 md:min-w-[180px] md:flex-1">
+                <div className="flex items-center justify-between border-b border-outline-variant pb-2 mb-1">
+                  <span className={`text-label-caps ${col.accent} uppercase`}>{col.label}</span>
+                  <span className={`text-data-label ${col.badge} px-2 rounded-full`}>{items.length}</span>
+                </div>
+                <div
+                  className={`max-h-[360px] overflow-y-auto space-y-3 pr-1 custom-scrollbar
+                    ${isDone ? 'opacity-60 grayscale hover:opacity-100 hover:grayscale-0 transition-all' : ''}`}
+                >
+                  {items.length === 0 ? (
+                    <p className="text-data-label text-on-surface-variant text-center py-4">Sin épicas</p>
+                  ) : (
+                    items.map((epic) => <EpicCard key={epic.id} epic={epic} isDone={isDone} />)
+                  )}
+                </div>
               </div>
-              <div
-                className={`max-h-[360px] overflow-y-auto space-y-3 pr-1 custom-scrollbar
-                  ${isDone ? 'opacity-60 grayscale hover:opacity-100 hover:grayscale-0 transition-all' : ''}`}
-              >
-                {items.length === 0 ? (
-                  <p className="text-data-label text-on-surface-variant text-center py-4">Sin épicas</p>
-                ) : (
-                  items.map((epic) => <EpicCard key={epic.id} epic={epic} isDone={isDone} />)
-                )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      )}
     </section>
   )
 }
 
 function InitiativesTable({ epics }) {
-  const filtered = epics.filter((e) => e.lead_time_days !== null && e.lead_time_days > 30)
   return (
     <section className="bg-white rounded border border-outline-variant shadow-card overflow-hidden">
       <div className="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
@@ -224,31 +204,28 @@ function InitiativesTable({ epics }) {
         </div>
         <span className="text-data-label text-on-surface-variant">{epics.length} épicas totales</span>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-surface-container-lowest">
-              {[
-                { label: 'ÉPICA',     cls: '' },
-                { label: 'PROYECTO',  cls: '' },
-                { label: 'ESTADO',    cls: '' },
-                { label: 'ASSIGNEE',  cls: 'hidden md:table-cell' },
-                { label: 'LEAD TIME', cls: 'hidden sm:table-cell' },
-                { label: 'VENCE',     cls: 'hidden md:table-cell' },
-              ].map(({ label, cls }) => (
-                <th key={label} className={`px-6 py-4 text-label-caps text-secondary ${cls}`}>{label}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-outline-variant">
-            {epics.length === 0 ? (
-              <tr>
-                <td colSpan={3} className="px-6 py-8 text-center text-body-base text-on-surface-variant">
-                  No hay épicas sincronizadas aún. Ejecuta la sincronización desde el panel Admin.
-                </td>
+
+      {epics.length === 0 ? (
+        <EmptyState icon="table_rows" message="No hay épicas sincronizadas aún. Ejecuta la sincronización desde el panel Admin." />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-surface-container-lowest">
+                {[
+                  { label: 'ÉPICA',     cls: '' },
+                  { label: 'PROYECTO',  cls: '' },
+                  { label: 'ESTADO',    cls: '' },
+                  { label: 'ASSIGNEE',  cls: 'hidden md:table-cell' },
+                  { label: 'LEAD TIME', cls: 'hidden sm:table-cell' },
+                  { label: 'VENCE',     cls: 'hidden md:table-cell' },
+                ].map(({ label, cls }) => (
+                  <th key={label} className={`px-6 py-4 text-label-caps text-secondary ${cls}`}>{label}</th>
+                ))}
               </tr>
-            ) : (
-              epics.map((epic) => {
+            </thead>
+            <tbody className="divide-y divide-outline-variant">
+              {epics.map((epic) => {
                 const isOverdue = epic.due_date && dayjs(epic.due_date).isBefore(dayjs()) && epic.status !== 'Done'
                 return (
                   <tr key={epic.id} className="hover:bg-surface-container-low transition-colors">
@@ -286,11 +263,11 @@ function InitiativesTable({ epics }) {
                     </td>
                   </tr>
                 )
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   )
 }
@@ -299,14 +276,15 @@ function InitiativesTable({ epics }) {
 
 export default function DashboardPage() {
   const { isAdmin, token } = useAuth()
-  const [epics, setEpics]     = useState([])
-  const [stats, setStats]     = useState(null)
+  const [epics, setEpics]         = useState([])
+  const [stats, setStats]         = useState(null)
   const [syncStatus, setSyncStatus] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [syncing, setSyncing] = useState(false)
-  const [filters, setFilters] = useState({
+  const [projects, setProjects]   = useState([])
+  const [loading, setLoading]     = useState(true)
+  const [syncing, setSyncing]     = useState(false)
+  const [filters, setFilters]     = useState({
     vp: '', squad: '', quarter: '', year: '',
-    _vps: [], _squads: [], _projects: [],
+    _vps: [],
   })
 
   useEffect(() => {
@@ -314,27 +292,23 @@ export default function DashboardPage() {
       getEpics().catch(() => []),
       getEpicsStats().catch(() => null),
       getSyncStatus().catch(() => ({ projects: [] })),
-    ]).then(([epicsData, statsData, syncData]) => {
-        const data = epicsData.length > 0 ? epicsData : MOCK_EPICS
-        setEpics(data)
-        setStats(statsData)
-        setSyncStatus(syncData)
-        const vps    = [...new Set(data.map((e) => e.assignee).filter(Boolean))].sort()
-        const squads = [...new Set(data.map((e) => e.project_key).filter(Boolean))].sort()
-        setFilters((f) => ({ ...f, _vps: vps, _squads: squads, _projects: syncData.projects || [] }))
-      })
-      .finally(() => setLoading(false))
+      getProjects().catch(() => []),
+    ]).then(([epicsData, statsData, syncData, projectsData]) => {
+      setEpics(epicsData)
+      setStats(statsData)
+      setSyncStatus(syncData)
+      setProjects(projectsData)
+      const vps = [...new Set(epicsData.map((e) => e.assignee).filter(Boolean))].sort()
+      setFilters((f) => ({ ...f, _vps: vps }))
+    }).finally(() => setLoading(false))
   }, [])
 
+  // US-2: Squad filtra por project_key, año/quarter usan campos estructurados (US-3)
   const filteredEpics = epics.filter((e) => {
     if (filters.vp    && e.assignee    !== filters.vp)    return false
     if (filters.squad && e.project_key !== filters.squad)  return false
-    if (filters.quarter || filters.year) {
-      const pq = e.priority_quarter ?? ''          // ej. "Q2 2026"
-      const [pqQ, pqY] = pq.split(' ')
-      if (filters.quarter && pqQ !== filters.quarter) return false
-      if (filters.year    && pqY !== filters.year)    return false
-    }
+    if (filters.quarter && String(e.quarter) !== filters.quarter) return false
+    if (filters.year    && String(e.year)    !== filters.year)    return false
     return true
   })
 
@@ -350,16 +324,19 @@ export default function DashboardPage() {
       setEpics(epicsData)
       setStats(statsData)
       setSyncStatus(syncData)
+      const vps = [...new Set(epicsData.map((e) => e.assignee).filter(Boolean))].sort()
+      setFilters((f) => ({ ...f, _vps: vps }))
     } finally {
       setSyncing(false)
     }
   }
 
-  const totalEpics  = stats?.total ?? 0
-  const doneCount   = grouped['Done']?.length ?? 0
-  const inProg      = grouped['In Progress']?.length ?? 0
-  const avgLead     = stats?.avg_lead_time_days ?? null
-  const icr         = totalEpics > 0 ? Math.round((doneCount / totalEpics) * 100) : 0
+  const totalEpics = stats?.total ?? 0
+  const doneCount  = grouped['Done']?.length ?? 0
+  const inProg     = grouped['In Progress']?.length ?? 0
+  const avgLead    = stats?.avg_lead_time_days ?? null
+  const icr        = totalEpics > 0 ? Math.round((doneCount / totalEpics) * 100) : 0
+  const hasEpics   = epics.length > 0
 
   if (loading) {
     return (
@@ -375,6 +352,7 @@ export default function DashboardPage() {
       {/* Filter Bar */}
       <FilterBar
         filters={filters}
+        projects={projects}
         onChange={setFilters}
         onClear={() => setFilters((f) => ({ ...f, vp: '', squad: '', quarter: '', year: '' }))}
       />
@@ -389,22 +367,26 @@ export default function DashboardPage() {
           <div className="flex flex-wrap gap-6 sm:gap-12 items-center">
             <div className="text-center">
               <p className="text-label-caps text-on-surface-variant">CUMPLIMIENTO (ICR)</p>
-              <p className="text-metric-display text-primary">{icr}%</p>
+              <p className="text-metric-display text-primary">{hasEpics ? `${icr}%` : '—'}</p>
             </div>
             <div className="text-center">
               <p className="text-label-caps text-on-surface-variant">ÉPICAS TOTALES</p>
-              <p className="text-metric-display text-primary">{totalEpics}</p>
+              <p className="text-metric-display text-primary">{hasEpics ? totalEpics : '—'}</p>
             </div>
             <div className="text-center">
               <p className="text-label-caps text-on-surface-variant mb-2">ESTADO GENERAL</p>
-              <div className="flex items-center justify-center">
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                  <span className="material-symbols-outlined text-green-700" style={{ fontVariationSettings: '"FILL" 1' }}>
-                    check_circle
+              {hasEpics ? (
+                <div className="flex items-center justify-center">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                    <span className="material-symbols-outlined text-green-700" style={{ fontVariationSettings: '"FILL" 1' }}>
+                      check_circle
+                    </span>
                   </span>
-                </span>
-                <span className="ml-3 text-headline-md text-green-700">Saludable</span>
-              </div>
+                  <span className="ml-3 text-headline-md text-green-700">Saludable</span>
+                </div>
+              ) : (
+                <span className="text-body-base text-on-surface-variant">Sin datos</span>
+              )}
             </div>
             {isAdmin && (
               <button
@@ -420,64 +402,62 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* KPI Grid */}
-      <section className="grid gap-card-gap grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        <KpiCard label="LEAD TIME PROMEDIO" value={avgLead != null ? `${avgLead}` : '—'} sub="días promedio por épica">
-          <div className="h-20 w-full bg-slate-50 flex items-end gap-1 px-1 mt-4">
-            {[40, 60, 50, 70, 35, 30].map((h, i) => (
-              <div key={i} className="w-full bg-primary-container rounded-t" style={{ height: `${h}%` }} />
-            ))}
-          </div>
-        </KpiCard>
+      {/* KPI Grid — solo se renderiza si hay datos */}
+      {hasEpics ? (
+        <section className="grid gap-card-gap grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <KpiCard label="LEAD TIME PROMEDIO" value={avgLead != null ? `${avgLead}` : '—'} sub="días promedio por épica">
+            <div className="h-20 w-full bg-slate-50 flex items-end gap-1 px-1 mt-4">
+              {[40, 60, 50, 70, 35, 30].map((h, i) => (
+                <div key={i} className="w-full bg-primary-container rounded-t" style={{ height: `${h}%` }} />
+              ))}
+            </div>
+          </KpiCard>
 
-        <KpiCard
-          label="ÉPICAS EN DESARROLLO"
-          value={inProg}
-          sub="Activas este período"
-        >
-          <div className="mt-8 pt-4 border-t border-outline-variant">
-            <p className="text-data-label text-on-surface-variant">
-              {syncStatus?.projects?.length ?? 0} proyectos activos
-            </p>
-          </div>
-        </KpiCard>
+          <KpiCard label="ÉPICAS EN DESARROLLO" value={inProg} sub="Activas este período">
+            <div className="mt-8 pt-4 border-t border-outline-variant">
+              <p className="text-data-label text-on-surface-variant">
+                {syncStatus?.projects?.length ?? 0} proyectos activos
+              </p>
+            </div>
+          </KpiCard>
 
-        <KpiCard
-          label="ÉPICAS CANCELADAS / EN RIESGO"
-          value={stats?.by_status?.Cancelled ?? 0}
-          sub="Filtro de eficiencia activo"
-          iconColor="text-error"
-        >
-          <div className="mt-10 relative h-2 bg-surface-container-high rounded-full overflow-hidden">
-            <div
-              className="absolute left-0 top-0 h-full bg-error"
-              style={{ width: `${Math.min(100, ((stats?.by_status?.Cancelled ?? 0) / Math.max(1, totalEpics)) * 100)}%` }}
-            />
-          </div>
-        </KpiCard>
+          <KpiCard
+            label="ÉPICAS CANCELADAS / EN RIESGO"
+            value={stats?.by_status?.Cancelled ?? 0}
+            sub="Filtro de eficiencia activo"
+            iconColor="text-error"
+          >
+            <div className="mt-10 relative h-2 bg-surface-container-high rounded-full overflow-hidden">
+              <div
+                className="absolute left-0 top-0 h-full bg-error"
+                style={{ width: `${Math.min(100, ((stats?.by_status?.Cancelled ?? 0) / Math.max(1, totalEpics)) * 100)}%` }}
+              />
+            </div>
+          </KpiCard>
 
-        <KpiCard
-          label="ÉPICAS BLOQUEADAS"
-          value={stats?.by_status?.Blocked ?? stats?.by_status?.['On Hold'] ?? 0}
-          sub="Optimización de capacidad"
-        >
-          <div className="mt-6 flex items-center justify-between">
-            <span className="text-data-label text-on-surface-variant">Revisado por Comité Agile</span>
-          </div>
-        </KpiCard>
+          <KpiCard label="ÉPICAS BLOQUEADAS" value={stats?.by_status?.Blocked ?? stats?.by_status?.['On Hold'] ?? 0} sub="Optimización de capacidad">
+            <div className="mt-6 flex items-center justify-between">
+              <span className="text-data-label text-on-surface-variant">Revisado por Comité Agile</span>
+            </div>
+          </KpiCard>
 
-        <KpiCard label="ÉPICAS TERMINADAS" value={doneCount} sub={`Ciclo completo — ${epics.length} totales`}>
-          <div className="mt-8 flex items-center gap-2">
-            <span className="material-symbols-outlined text-green-700">emoji_events</span>
-            <span className="text-data-label text-green-700 uppercase font-bold">
-              {doneCount > 0 ? 'Meta en curso' : 'Sin completadas'}
-            </span>
-          </div>
-        </KpiCard>
-      </section>
+          <KpiCard label="ÉPICAS TERMINADAS" value={doneCount} sub={`Ciclo completo — ${epics.length} totales`}>
+            <div className="mt-8 flex items-center gap-2">
+              <span className="material-symbols-outlined text-green-700">emoji_events</span>
+              <span className="text-data-label text-green-700 uppercase font-bold">
+                {doneCount > 0 ? 'Meta en curso' : 'Sin completadas'}
+              </span>
+            </div>
+          </KpiCard>
+        </section>
+      ) : (
+        <section className="bg-white rounded border border-outline-variant shadow-card">
+          <EmptyState icon="bar_chart" message="No hay métricas disponibles. Sincroniza los datos de Jira para comenzar." />
+        </section>
+      )}
 
       {/* Kanban Board */}
-      <KanbanBoard grouped={grouped} />
+      <KanbanBoard grouped={grouped} hasData={hasEpics} />
 
       {/* Detail Table */}
       <InitiativesTable epics={filteredEpics} />

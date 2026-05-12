@@ -41,6 +41,12 @@ CREATE INDEX IF NOT EXISTS idx_jira_epics_project_key ON jira_epics(project_key)
 CREATE INDEX IF NOT EXISTS idx_jira_epics_status      ON jira_epics(status);
 CREATE INDEX IF NOT EXISTS idx_jira_epics_due_date    ON jira_epics(due_date);
 
+-- Migration: columnas ETL año/trimestre (US-3)
+-- Ejecutar si la tabla ya existía antes de esta versión
+ALTER TABLE jira_epics
+    ADD COLUMN IF NOT EXISTS year    INT,
+    ADD COLUMN IF NOT EXISTS quarter TEXT;
+
 -- 3. Trigger updated_at automático
 CREATE OR REPLACE FUNCTION _set_updated_at()
 RETURNS TRIGGER AS $$

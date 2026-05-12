@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import base64
 import logging
+import re
 from datetime import datetime, timezone
 from typing import Any
 
@@ -76,6 +77,22 @@ def _extract_text(adf: Any) -> str | None:
     return result or None
 
 
+# ── Label parser (US-3) ───────────────────────────────────────────────────────
+
+# Acepta: "#2026Q2", "2026Q2", "#2026q2" — case-insensitive, # opcional
+_LABEL_RE = re.compile(r'^#?(\d{4})Q([1-4])$', re.IGNORECASE)
+
+
+def _parse_label(labels: list[str] | None) -> tuple[int | None, str | None]:
+    """Extrae (year, quarter) del primer label con formato #YYYYQn.
+    Retorna (None, None) si no hay ningún label válido."""
+    for label in (labels or []):
+        m = _LABEL_RE.match(label.strip())
+        if m:
+            return int(m.group(1)), f"Q{m.group(2).upper()}"
+    return None, None
+
+
 # ── Fetcher ───────────────────────────────────────────────────────────────────
 
 def fetch_epics_for_project(project_key: str) -> list[dict[str, Any]]:
@@ -93,6 +110,7 @@ def fetch_epics_for_project(project_key: str) -> list[dict[str, Any]]:
         "status",
         "assignee",
         "priority",
+        "labels",
         settings.jira_field_start_date,
     ]
 
@@ -131,6 +149,7 @@ def fetch_epics_for_project(project_key: str) -> list[dict[str, Any]]:
                 f = issue.get("fields", {})
                 start_dt = _parse_date(f.get(settings.jira_field_start_date))
                 due_dt   = _parse_date(f.get("duedate"))
+                year, quarter = _parse_label(f.get("labels"))
 
                 epics.append({
                     "jira_issue_id":    issue["key"],
@@ -143,6 +162,9 @@ def fetch_epics_for_project(project_key: str) -> list[dict[str, Any]]:
                     "assignee":         (f.get("assignee") or {}).get("displayName"),
                     "priority_status":  (f.get("priority") or {}).get("name"),
                     "project_key":      project_key,
+                    "year":             year,
+                    "quarter":          quarter,
+                    "priority_quarter": f"{quarter} {year}" if quarter and year else None,
                 })
 
             next_page_token = data.get("nextPageToken")
