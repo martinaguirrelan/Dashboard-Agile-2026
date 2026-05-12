@@ -2,8 +2,11 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from .config import settings
 
+# Supabase connection strings use "postgres://" but SQLAlchemy requires "postgresql://"
+_db_url = settings.database_url.replace("postgres://", "postgresql://", 1)
+
 engine = create_engine(
-    settings.database_url,
+    _db_url,
     pool_pre_ping=True,
     pool_size=5,
     max_overflow=10,
