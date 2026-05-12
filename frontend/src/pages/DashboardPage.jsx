@@ -83,12 +83,12 @@ function SelectFilter({ label, value, onChange, children }) {
 
 function FilterBar({ filters, onChange, onClear }) {
   return (
-    <div className="bg-white p-4 rounded border border-outline-variant shadow-card flex items-center gap-6 mb-2">
-      <div className="flex items-center gap-2">
+    <div className="bg-white p-4 rounded border border-outline-variant shadow-card mb-2">
+      <div className="flex items-center gap-2 mb-3">
         <span className="material-symbols-outlined text-secondary text-sm">filter_alt</span>
         <span className="text-label-caps text-secondary uppercase">Filtros Ejecutivos:</span>
       </div>
-      <div className="flex flex-wrap gap-4 flex-grow">
+      <div className="flex flex-wrap gap-3 items-end">
         <SelectFilter label="VP" value={filters.vp} onChange={(v) => onChange({ ...filters, vp: v })}>
           <option value="">Todas las VPs</option>
           {filters._vps.map((vp) => <option key={vp} value={vp}>{vp}</option>)}
@@ -109,13 +109,13 @@ function FilterBar({ filters, onChange, onClear }) {
           {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
         </SelectFilter>
 
+        <button
+          onClick={onClear}
+          className="min-h-[44px] px-4 py-2 border border-primary text-primary text-label-caps rounded-lg hover:bg-primary/5 transition-colors"
+        >
+          Limpiar Filtros
+        </button>
       </div>
-      <button
-        onClick={onClear}
-        className="px-4 py-2 border border-primary text-primary text-label-caps rounded-lg hover:bg-primary/5 transition-colors"
-      >
-        Limpiar Filtros
-      </button>
     </div>
   )
 }
@@ -185,7 +185,7 @@ function KanbanBoard({ grouped }) {
         </button>
       </div>
 
-      <div className="grid grid-cols-5 gap-4">
+      <div className="flex flex-col md:flex-row gap-4 overflow-x-auto pb-2">
         {STATUS_COLUMNS.map((col) => {
           const items = grouped[col.key] || []
           const isDone = col.key === 'Done'
@@ -228,15 +228,22 @@ function InitiativesTable({ epics }) {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-surface-container-lowest">
-              {['ÉPICA', 'PROYECTO', 'ESTADO', 'ASSIGNEE', 'LEAD TIME', 'VENCE'].map((h) => (
-                <th key={h} className="px-6 py-4 text-label-caps text-secondary">{h}</th>
+              {[
+                { label: 'ÉPICA',     cls: '' },
+                { label: 'PROYECTO',  cls: '' },
+                { label: 'ESTADO',    cls: '' },
+                { label: 'ASSIGNEE',  cls: 'hidden md:table-cell' },
+                { label: 'LEAD TIME', cls: 'hidden sm:table-cell' },
+                { label: 'VENCE',     cls: 'hidden md:table-cell' },
+              ].map(({ label, cls }) => (
+                <th key={label} className={`px-6 py-4 text-label-caps text-secondary ${cls}`}>{label}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-outline-variant">
             {epics.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-body-base text-on-surface-variant">
+                <td colSpan={3} className="px-6 py-8 text-center text-body-base text-on-surface-variant">
                   No hay épicas sincronizadas aún. Ejecuta la sincronización desde el panel Admin.
                 </td>
               </tr>
@@ -262,15 +269,15 @@ function InitiativesTable({ epics }) {
                         {epic.status || '—'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-body-base text-on-surface-variant">{epic.assignee || '—'}</td>
-                    <td className="px-6 py-4 text-body-base">
+                    <td className="hidden md:table-cell px-6 py-4 text-body-base text-on-surface-variant">{epic.assignee || '—'}</td>
+                    <td className="hidden sm:table-cell px-6 py-4 text-body-base">
                       {epic.lead_time_days != null ? (
                         <span className={epic.lead_time_days > 30 ? 'text-error font-bold' : 'text-on-surface'}>
                           {epic.lead_time_days} días
                         </span>
                       ) : '—'}
                     </td>
-                    <td className="px-6 py-4 text-body-base text-on-surface-variant">
+                    <td className="hidden md:table-cell px-6 py-4 text-body-base text-on-surface-variant">
                       {epic.due_date ? (
                         <span className={isOverdue ? 'text-error font-bold' : ''}>
                           {dayjs(epic.due_date).format('DD MMM YYYY')}
@@ -374,12 +381,12 @@ export default function DashboardPage() {
 
       {/* Summary Header */}
       <section>
-        <div className="bg-white p-6 rounded border border-outline-variant shadow-card flex items-center justify-between">
+        <div className="bg-white p-6 rounded border border-outline-variant shadow-card flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-label-caps text-secondary mb-1">RESUMEN DE TRANSFORMACIÓN</h2>
             <h3 className="text-headline-lg text-primary">Rendimiento del Portfolio — Épicas Activas</h3>
           </div>
-          <div className="flex gap-12 items-center">
+          <div className="flex flex-wrap gap-6 sm:gap-12 items-center">
             <div className="text-center">
               <p className="text-label-caps text-on-surface-variant">CUMPLIMIENTO (ICR)</p>
               <p className="text-metric-display text-primary">{icr}%</p>
@@ -414,7 +421,7 @@ export default function DashboardPage() {
       </section>
 
       {/* KPI Grid */}
-      <section className="grid gap-card-gap grid-cols-5">
+      <section className="grid gap-card-gap grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <KpiCard label="LEAD TIME PROMEDIO" value={avgLead != null ? `${avgLead}` : '—'} sub="días promedio por épica">
           <div className="h-20 w-full bg-slate-50 flex items-end gap-1 px-1 mt-4">
             {[40, 60, 50, 70, 35, 30].map((h, i) => (
