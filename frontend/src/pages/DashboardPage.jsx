@@ -341,8 +341,6 @@ export default function DashboardPage() {
   }
 
   const totalEpics = filteredEpics.length
-  const doneCount  = grouped['Done']?.length ?? 0
-  const inProg     = grouped['In Progress']?.length ?? 0
   const hasEpics   = epics.length > 0
   const isFiltered = totalEpics !== epics.length
 
@@ -352,9 +350,23 @@ export default function DashboardPage() {
     return Math.round(withLead.reduce((s, e) => s + e.lead_time_days, 0) / withLead.length)
   })()
 
-  const cancelledCount = filteredEpics.filter((e) =>
-    e.status === 'Cancelled' || e.status === 'Cancelado'
+  // HU KPIs: cancelada/en riesgo prevalece sobre cualquier otro estado
+  const isCancelledOrAtRisk = (e) => {
+    const est = (e.estado_iniciativa || '').toLowerCase().trim()
+    return est === 'cancelada' || est === 'en riesgo'
+  }
+
+  const cancelledCount = filteredEpics.filter(isCancelledOrAtRisk).length
+
+  const inProg = filteredEpics.filter(
+    (e) => e.status === 'In Progress' && !isCancelledOrAtRisk(e)
   ).length
+
+  // Terminadas: status Done ó fecha_done presente (mayor precisión)
+  const doneCount = filteredEpics.filter(
+    (e) => e.status === 'Done' || e.fecha_done != null
+  ).length
+
   const blockedCount = filteredEpics.filter((e) =>
     e.status === 'Blocked' || e.status === 'On Hold' || e.status === 'Bloqueado'
   ).length
