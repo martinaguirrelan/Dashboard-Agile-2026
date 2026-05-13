@@ -24,8 +24,9 @@ def _active_project_keys(db: Session) -> list[str]:
     return [r[0] for r in rows]
 
 
-def _upsert_epics(db: Session, epics: list[dict]) -> tuple[int, int]:
+def _upsert_epics(db: Session, epics: list[dict]) -> tuple[int, int, list[str]]:
     ok = errors = 0
+    error_details: list[str] = []
     for epic in epics:
         try:
             stmt = (
@@ -81,10 +82,12 @@ def _upsert_epics(db: Session, epics: list[dict]) -> tuple[int, int]:
             db.execute(stmt)
             ok += 1
         except Exception as exc:
-            logger.error("    ✗ upsert error [%s]: %s", epic.get("jira_issue_id"), exc)
+            msg = f"{epic.get('jira_issue_id')}: {exc}"
+            logger.error("    ✗ upsert error %s", msg)
+            error_details.append(msg)
             errors += 1
     db.commit()
-    return ok, errors
+    return ok, errors, error_details
 
 
 def run_sync() -> dict:
@@ -112,10 +115,13 @@ def run_sync() -> dict:
             logger.info("  → %s", key)
             try:
                 epics = fetch_epics_for_project(key)
-                upserted, errors = _upsert_epics(db, epics)
+                upserted, errors, err_details = _upsert_epics(db, epics)
                 total_upserted += upserted
                 total_errors   += errors
-                projects_result.append({"key": key, "epics": upserted, "errors": errors})
+                entry: dict = {"key": key, "epics": upserted, "errors": errors}
+                if err_details:
+                    entry["error_details"] = err_details
+                projects_result.append(entry)
             except Exception as exc:
                 logger.error("  ✗ Error en proyecto %s: %s", key, exc)
                 projects_result.append({"key": key, "epics": 0, "errors": 1, "error": str(exc)})
