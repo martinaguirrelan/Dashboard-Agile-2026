@@ -99,9 +99,12 @@ def _parse_label(labels: list[str] | None) -> tuple[int | None, str | None]:
 _CUSTOM_QUARTER_RE = re.compile(r'(\d{4})\s*-\s*(Q[1-4])', re.IGNORECASE)
 
 
-def _parse_custom_quarter(value: str | None) -> tuple[int | None, str | None]:
+def _parse_custom_quarter(value: str | dict | None) -> tuple[int | None, str | None]:
     """Extrae (year, quarter) desde customfield_11302 con formato 'YYYY -QX'.
+    Acepta string o dict (select field de Jira: {"value": "2026 -Q2"}).
     Retorna (None, None) si el valor está vacío o no coincide."""
+    if isinstance(value, dict):
+        value = value.get("value") or ""
     if not value:
         return None, None
     m = _CUSTOM_QUARTER_RE.search(value.strip())
