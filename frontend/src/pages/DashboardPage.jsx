@@ -7,16 +7,16 @@ import dayjs from 'dayjs'
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 const STATUS_COLUMNS = [
-  { key: 'To Do',        label: 'POR INICIAR',      accent: 'text-on-surface-variant', badge: 'bg-surface-container' },
-  { key: 'In Progress',  label: 'EN DESARROLLO',    accent: 'text-primary',            badge: 'bg-primary-container text-on-primary' },
-  { key: 'In Testing',   label: 'EN PRUEBAS',       accent: 'text-on-surface-variant', badge: 'bg-surface-container' },
-  { key: 'In Review',    label: 'EN RATIFICACIÓN',  accent: 'text-on-surface-variant', badge: 'bg-surface-container' },
-  { key: 'Done',         label: 'FINALIZADAS',      accent: 'text-secondary',          badge: 'bg-green-100 text-green-700' },
+  { key: 'por_iniciar',   label: 'POR INICIAR',      accent: 'text-on-surface-variant', badge: 'bg-surface-container' },
+  { key: 'en_desarrollo', label: 'EN DESARROLLO',    accent: 'text-primary',            badge: 'bg-primary-container text-on-primary' },
+  { key: 'en_pruebas',    label: 'EN PRUEBAS',       accent: 'text-on-surface-variant', badge: 'bg-surface-container' },
+  { key: 'en_revision',   label: 'EN RATIFICACIÓN',  accent: 'text-on-surface-variant', badge: 'bg-surface-container' },
+  { key: 'finalizada',    label: 'FINALIZADAS',      accent: 'text-secondary',          badge: 'bg-green-100 text-green-700' },
 ]
 
 function groupByStatus(epics) {
   return STATUS_COLUMNS.reduce((acc, col) => {
-    acc[col.key] = epics.filter((e) => e.status === col.key)
+    acc[col.key] = epics.filter((e) => e.estado_normalizado === col.key)
     return acc
   }, {})
 }
@@ -358,14 +358,13 @@ export default function DashboardPage() {
 
   const cancelledCount = filteredEpics.filter(isCancelledOrAtRisk).length
 
-  const IN_PROGRESS_STATUSES = ['In Progress', 'En Desarrollo']
   const inProg = filteredEpics.filter(
-    (e) => IN_PROGRESS_STATUSES.includes(e.status) && !isCancelledOrAtRisk(e)
+    (e) => e.estado_normalizado === 'en_desarrollo' && !isCancelledOrAtRisk(e)
   ).length
 
-  // Terminadas: status Done ó fecha_done presente (mayor precisión)
+  // Terminadas: estado normalizado 'finalizada' ó fecha_done presente
   const doneCount = filteredEpics.filter(
-    (e) => e.status === 'Done' || e.fecha_done != null
+    (e) => e.estado_normalizado === 'finalizada' || e.fecha_done != null
   ).length
 
   const blockedCount = filteredEpics.filter((e) =>

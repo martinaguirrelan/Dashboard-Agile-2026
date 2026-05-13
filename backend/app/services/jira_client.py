@@ -109,6 +109,43 @@ def _parse_numeric(value: Any) -> float | None:
         return None
 
 
+# ── Status normalizer ────────────────────────────────────────────────────────
+
+_STATUS_MAP: dict[str, str] = {
+    # Por Iniciar
+    "to do":            "por_iniciar",
+    "por iniciar":      "por_iniciar",
+    "tareas por hacer": "por_iniciar",
+    "backlog":          "por_iniciar",
+    # En Desarrollo
+    "in progress":      "en_desarrollo",
+    "en proceso":       "en_desarrollo",
+    "en desarrollo":    "en_desarrollo",
+    # En Pruebas
+    "in testing":       "en_pruebas",
+    "en pruebas":       "en_pruebas",
+    # En Ratificación / Review
+    "in review":        "en_revision",
+    "en ratificacion":  "en_revision",
+    "en revision":      "en_revision",
+    # En PRD
+    "en prd":           "en_prd",
+    "in prd":           "en_prd",
+    # Finalizada
+    "done":             "finalizada",
+    "finalizada":       "finalizada",
+    "closed":           "finalizada",
+    "cerrada":          "finalizada",
+}
+
+
+def _normalize_status(status: str | None) -> str | None:
+    """Mapea el nombre de estado de Jira a una categoría controlada."""
+    if not status:
+        return None
+    return _STATUS_MAP.get(status.lower().strip())
+
+
 # ── Custom quarter parser (US-4) ─────────────────────────────────────────────
 
 # Acepta: "2026 -Q2", "2026-Q2", "2026 - Q2", "2026 -q2" — espacios/guion flexibles
@@ -217,6 +254,7 @@ def fetch_epics_for_project(project_key: str) -> list[dict[str, Any]]:
                     "due_date":         due_dt,
                     "lead_time_days":   _lead_time_days(start_dt, due_dt),
                     "status":           (f.get("status") or {}).get("name"),
+                    "estado_normalizado": _normalize_status((f.get("status") or {}).get("name")),
                     "assignee":         (f.get("assignee") or {}).get("displayName"),
                     "priority_status":  (f.get("priority") or {}).get("name"),
                     "project_key":      project_key,
