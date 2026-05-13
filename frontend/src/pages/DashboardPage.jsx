@@ -457,11 +457,6 @@ export default function DashboardPage() {
           </KpiCard>
 
           <KpiCard label="ÉPICAS EN DESARROLLO" value={inProg} sub="Activas este período">
-            <div className="mt-8 pt-4 border-t border-outline-variant">
-              <p className="text-data-label text-on-surface-variant">
-                {syncStatus?.projects?.length ?? 0} proyectos activos
-              </p>
-            </div>
           </KpiCard>
 
           <KpiCard
