@@ -484,7 +484,7 @@ export default function DashboardPage() {
             </div>
           </KpiCard>
 
-          <KpiCard label="ÉPICAS TERMINADAS" value={doneCount} sub={`Ciclo completo — ${epics.length} totales`}>
+          <KpiCard label="ÉPICAS TERMINADAS" value={doneCount} sub={`Ciclo completo — ${totalEpics} totales`}>
             <div className="mt-8 flex items-center gap-2">
               <span className="material-symbols-outlined text-green-700">emoji_events</span>
               <span className="text-data-label text-green-700 uppercase font-bold">
