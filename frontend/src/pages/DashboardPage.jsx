@@ -340,12 +340,26 @@ export default function DashboardPage() {
     }
   }
 
-  const totalEpics = stats?.total ?? 0
+  const totalEpics = filteredEpics.length
   const doneCount  = grouped['Done']?.length ?? 0
   const inProg     = grouped['In Progress']?.length ?? 0
-  const avgLead    = stats?.avg_lead_time_days ?? null
-  const icr        = totalEpics > 0 ? Math.round((doneCount / totalEpics) * 100) : 0
   const hasEpics   = epics.length > 0
+  const isFiltered = totalEpics !== epics.length
+
+  const avgLead = (() => {
+    const withLead = filteredEpics.filter((e) => e.lead_time_days != null)
+    if (!withLead.length) return null
+    return Math.round(withLead.reduce((s, e) => s + e.lead_time_days, 0) / withLead.length)
+  })()
+
+  const cancelledCount = filteredEpics.filter((e) =>
+    e.status === 'Cancelled' || e.status === 'Cancelado'
+  ).length
+  const blockedCount = filteredEpics.filter((e) =>
+    e.status === 'Blocked' || e.status === 'On Hold' || e.status === 'Bloqueado'
+  ).length
+
+  const icr = totalEpics > 0 ? Math.round((doneCount / totalEpics) * 100) : 0
 
   if (loading) {
     return (
@@ -357,11 +371,6 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-card-gap max-w-[1440px] mx-auto">
-
-      {/* DEBUG TEMPORAL */}
-      <div className="text-xs bg-yellow-50 border border-yellow-300 rounded p-2 font-mono">
-        VP={filters.vp||'–'} | Squad={filters.squad||'–'} | Q={filters.quarter||'–'} | Año={filters.year||'–'} | Resultados={filteredEpics.length}/{epics.length}
-      </div>
 
       {/* Filter Bar */}
       <FilterBar
@@ -378,6 +387,12 @@ export default function DashboardPage() {
           <div>
             <h2 className="text-label-caps text-secondary mb-1">RESUMEN DE TRANSFORMACIÓN</h2>
             <h3 className="text-headline-lg text-primary">Rendimiento del Portfolio — Épicas Activas</h3>
+            {isFiltered && (
+              <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-primary-container text-on-primary text-[10px] font-bold rounded-full">
+                <span className="material-symbols-outlined text-[12px]">filter_alt</span>
+                Filtro activo — {totalEpics} de {epics.length} épicas
+              </span>
+            )}
           </div>
           <div className="flex flex-wrap gap-6 sm:gap-12 items-center">
             <div className="text-center">
@@ -438,19 +453,19 @@ export default function DashboardPage() {
 
           <KpiCard
             label="ÉPICAS CANCELADAS / EN RIESGO"
-            value={stats?.by_status?.Cancelled ?? 0}
+            value={cancelledCount}
             sub="Filtro de eficiencia activo"
             iconColor="text-error"
           >
             <div className="mt-10 relative h-2 bg-surface-container-high rounded-full overflow-hidden">
               <div
                 className="absolute left-0 top-0 h-full bg-error"
-                style={{ width: `${Math.min(100, ((stats?.by_status?.Cancelled ?? 0) / Math.max(1, totalEpics)) * 100)}%` }}
+                style={{ width: `${Math.min(100, (cancelledCount / Math.max(1, totalEpics)) * 100)}%` }}
               />
             </div>
           </KpiCard>
 
-          <KpiCard label="ÉPICAS BLOQUEADAS" value={stats?.by_status?.Blocked ?? stats?.by_status?.['On Hold'] ?? 0} sub="Optimización de capacidad">
+          <KpiCard label="ÉPICAS BLOQUEADAS" value={blockedCount} sub="Optimización de capacidad">
             <div className="mt-6 flex items-center justify-between">
               <span className="text-data-label text-on-surface-variant">Revisado por Comité Agile</span>
             </div>
