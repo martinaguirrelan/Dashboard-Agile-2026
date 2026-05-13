@@ -362,9 +362,10 @@ export default function DashboardPage() {
     (e) => e.estado_normalizado === 'en_desarrollo' && !isCancelledOrAtRisk(e)
   ).length
 
-  // Terminadas: estado normalizado 'finalizada' ó fecha_done presente
+  // Terminadas: finalizada + en_prd cuentan como terminadas, o si tiene fecha_done
+  const DONE_STATUSES = ['finalizada', 'en_prd']
   const doneCount = filteredEpics.filter(
-    (e) => e.estado_normalizado === 'finalizada' || e.fecha_done != null
+    (e) => DONE_STATUSES.includes(e.estado_normalizado) || e.fecha_done != null
   ).length
 
   const blockedCount = filteredEpics.filter((e) =>
