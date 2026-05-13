@@ -109,10 +109,10 @@ function FilterBar({ filters, vps, projects, onChange, onClear }) {
 
 function KpiCard({ label, value, sub, icon, iconColor = 'text-on-surface-variant', children }) {
   return (
-    <div className="bg-white p-6 rounded border border-outline-variant shadow-card">
-      <div className="flex justify-between items-start mb-4">
+    <div className="bg-white p-6 rounded border border-outline-variant shadow-card flex flex-col">
+      <div className="flex justify-between items-start mb-4 min-h-[4rem]">
         <span className="text-label-caps text-secondary">{label}</span>
-        <span className={`material-symbols-outlined ${iconColor} cursor-help`}>{icon || 'info'}</span>
+        <span className={`material-symbols-outlined ${iconColor} cursor-help flex-shrink-0 ml-2`}>{icon || 'info'}</span>
       </div>
       <div className="mb-4">
         <p className="text-metric-display text-primary">{value}</p>
