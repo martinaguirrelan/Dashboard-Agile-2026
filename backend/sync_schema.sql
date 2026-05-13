@@ -47,6 +47,11 @@ ALTER TABLE jira_epics
     ADD COLUMN IF NOT EXISTS year    INT,
     ADD COLUMN IF NOT EXISTS quarter TEXT;
 
+-- Migration: estado normalizado para KPIs del dashboard
+ALTER TABLE jira_epics
+    ADD COLUMN IF NOT EXISTS estado_normalizado TEXT;
+    -- Valores controlados: por_iniciar | en_desarrollo | en_pruebas | en_revision | en_prd | finalizada
+
 -- Migration: campos ciclo de vida iniciativas (US-5)
 ALTER TABLE jira_epics
     ADD COLUMN IF NOT EXISTS sprint_inicio      TEXT,
