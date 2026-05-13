@@ -40,7 +40,9 @@ _DATE_FORMATS = (
 )
 
 
-def _parse_date(value: str | None) -> datetime | None:
+def _parse_date(value: Any) -> datetime | None:
+    if isinstance(value, dict):
+        value = value.get("value") or value.get("date") or ""
     if not value:
         return None
     for fmt in _DATE_FORMATS:
@@ -91,6 +93,20 @@ def _parse_label(labels: list[str] | None) -> tuple[int | None, str | None]:
         if m:
             return int(m.group(1)), f"Q{m.group(2).upper()}"
     return None, None
+
+
+# ── Numeric helper ───────────────────────────────────────────────────────────
+
+def _parse_numeric(value: Any) -> float | None:
+    """Coerce cualquier valor Jira a float. Acepta int, float, str y dict con 'value'."""
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        value = value.get("value")
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 # ── Custom quarter parser (US-4) ─────────────────────────────────────────────
@@ -208,8 +224,8 @@ def fetch_epics_for_project(project_key: str) -> list[dict[str, Any]]:
                     "quarter":          quarter,
                     "priority_quarter":  f"{quarter} {year}" if quarter and year else None,
                     "sprint_inicio":     _parse_sprint(f.get(settings.jira_field_sprint_inicio)),
-                    "estimacion_inicial": f.get(settings.jira_field_estimacion_ini),
-                    "estimacion_final":   f.get(settings.jira_field_estimacion_fin),
+                    "estimacion_inicial": _parse_numeric(f.get(settings.jira_field_estimacion_ini)),
+                    "estimacion_final":   _parse_numeric(f.get(settings.jira_field_estimacion_fin)),
                     "estado_iniciativa":  (f.get(settings.jira_field_estado_iniciativa) or {}).get("value"),
                     "fecha_done":         _parse_date(f.get(settings.jira_field_fecha_done)),
                     "fecha_prd":          _parse_date(f.get(settings.jira_field_fecha_prd)),
