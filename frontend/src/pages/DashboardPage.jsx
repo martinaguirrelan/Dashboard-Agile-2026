@@ -498,7 +498,7 @@ export default function DashboardPage() {
       <KanbanBoard grouped={grouped} hasData={hasEpics} />
 
       {/* Detail Table */}
-      <InitiativesTable epics={filteredEpics} />
+      <InitiativesTable epics={filteredEpics.filter((e) => !DONE_STATUSES.includes(e.estado_normalizado))} />
 
     </div>
   )
