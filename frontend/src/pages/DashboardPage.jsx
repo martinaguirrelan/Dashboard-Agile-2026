@@ -358,8 +358,9 @@ export default function DashboardPage() {
 
   const cancelledCount = filteredEpics.filter(isCancelledOrAtRisk).length
 
+  const IN_PROGRESS_STATUSES = ['In Progress', 'En Desarrollo']
   const inProg = filteredEpics.filter(
-    (e) => e.status === 'In Progress' && !isCancelledOrAtRisk(e)
+    (e) => IN_PROGRESS_STATUSES.includes(e.status) && !isCancelledOrAtRisk(e)
   ).length
 
   // Terminadas: status Done ó fecha_done presente (mayor precisión)
