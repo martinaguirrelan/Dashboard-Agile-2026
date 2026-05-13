@@ -358,6 +358,11 @@ export default function DashboardPage() {
   return (
     <div className="space-y-card-gap max-w-[1440px] mx-auto">
 
+      {/* DEBUG TEMPORAL */}
+      <div className="text-xs bg-yellow-50 border border-yellow-300 rounded p-2 font-mono">
+        VP={filters.vp||'–'} | Squad={filters.squad||'–'} | Q={filters.quarter||'–'} | Año={filters.year||'–'} | Resultados={filteredEpics.length}/{epics.length}
+      </div>
+
       {/* Filter Bar */}
       <FilterBar
         filters={filters}
