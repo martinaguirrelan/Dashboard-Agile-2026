@@ -93,6 +93,35 @@ def _parse_label(labels: list[str] | None) -> tuple[int | None, str | None]:
     return None, None
 
 
+# ── Custom quarter parser (US-4) ─────────────────────────────────────────────
+
+# Acepta: "2026 -Q2", "2026-Q2", "2026 - Q2", "2026 -q2" — espacios/guion flexibles
+_CUSTOM_QUARTER_RE = re.compile(r'(\d{4})\s*-\s*(Q[1-4])', re.IGNORECASE)
+
+
+def _parse_custom_quarter(value: str | None) -> tuple[int | None, str | None]:
+    """Extrae (year, quarter) desde customfield_11302 con formato 'YYYY -QX'.
+    Retorna (None, None) si el valor está vacío o no coincide."""
+    if not value:
+        return None, None
+    m = _CUSTOM_QUARTER_RE.search(value.strip())
+    if m:
+        return int(m.group(1)), m.group(2).upper()
+    return None, None
+
+
+# ── Sprint parser ────────────────────────────────────────────────────────────
+
+def _parse_sprint(sprints: Any, last: bool = False) -> str | None:
+    """Extrae el nombre del primer (o último si last=True) sprint de un array de objetos Sprint."""
+    if not isinstance(sprints, list) or not sprints:
+        return None
+    target = sprints[-1] if last else sprints[0]
+    if isinstance(target, dict):
+        return target.get("name") or str(target.get("id"))
+    return None
+
+
 # ── Fetcher ───────────────────────────────────────────────────────────────────
 
 def fetch_epics_for_project(project_key: str) -> list[dict[str, Any]]:
@@ -112,6 +141,14 @@ def fetch_epics_for_project(project_key: str) -> list[dict[str, Any]]:
         "priority",
         "labels",
         settings.jira_field_start_date,
+        settings.jira_field_quarter,
+        settings.jira_field_sprint_inicio,
+        settings.jira_field_estimacion_ini,
+        settings.jira_field_estimacion_fin,
+        settings.jira_field_estado_iniciativa,
+        settings.jira_field_fecha_done,
+        settings.jira_field_fecha_prd,
+        settings.jira_field_sprint_fin,
     ]
 
     epics: list[dict] = []
@@ -149,7 +186,9 @@ def fetch_epics_for_project(project_key: str) -> list[dict[str, Any]]:
                 f = issue.get("fields", {})
                 start_dt = _parse_date(f.get(settings.jira_field_start_date))
                 due_dt   = _parse_date(f.get("duedate"))
-                year, quarter = _parse_label(f.get("labels"))
+                year, quarter = _parse_custom_quarter(f.get(settings.jira_field_quarter))
+                if year is None:
+                    year, quarter = _parse_label(f.get("labels"))
 
                 epics.append({
                     "jira_issue_id":    issue["key"],
@@ -164,7 +203,14 @@ def fetch_epics_for_project(project_key: str) -> list[dict[str, Any]]:
                     "project_key":      project_key,
                     "year":             year,
                     "quarter":          quarter,
-                    "priority_quarter": f"{quarter} {year}" if quarter and year else None,
+                    "priority_quarter":  f"{quarter} {year}" if quarter and year else None,
+                    "sprint_inicio":     _parse_sprint(f.get(settings.jira_field_sprint_inicio)),
+                    "estimacion_inicial": f.get(settings.jira_field_estimacion_ini),
+                    "estimacion_final":   f.get(settings.jira_field_estimacion_fin),
+                    "estado_iniciativa":  (f.get(settings.jira_field_estado_iniciativa) or {}).get("value"),
+                    "fecha_done":         _parse_date(f.get(settings.jira_field_fecha_done)),
+                    "fecha_prd":          _parse_date(f.get(settings.jira_field_fecha_prd)),
+                    "sprint_fin":         _parse_sprint(f.get(settings.jira_field_sprint_fin), last=True),
                 })
 
             next_page_token = data.get("nextPageToken")
