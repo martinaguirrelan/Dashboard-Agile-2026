@@ -20,7 +20,7 @@ def trigger_sync():
     return run_sync()
 
 
-@router.get("/debug-fields/{project_key}", dependencies=[Depends(require_admin)])
+@router.get("/debug-fields/{project_key}")
 def debug_jira_fields(project_key: str):
     """Devuelve el raw de los custom fields de sprint/estimación del primer epic del proyecto."""
     target_fields = [
