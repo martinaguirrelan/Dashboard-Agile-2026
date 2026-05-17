@@ -15,7 +15,7 @@ function parseQuarter(quarter) {
 
 function mapStatus(epic) {
   const est = (epic.estado_iniciativa || '').toLowerCase().trim()
-  if (est === 'cancelada') return 'blocked'
+  if (est === 'cancelada') return 'cancelled'
   if (est === 'en riesgo') return 'risk'
   const map = {
     por_iniciar:   'backlog',
@@ -86,9 +86,13 @@ export function adaptEpics(epics, projects) {
     risk:     deriveRisk(epic),
     delta:    0,
     // raw fields for drawer detail
-    sprint_inicio:  epic.sprint_inicio,
-    fecha_prd:      epic.fecha_prd,
+    sprint_inicio:     epic.sprint_inicio,
+    fecha_prd:         epic.fecha_prd,
     estado_iniciativa: epic.estado_iniciativa,
+    // cancellation fields (populated when backend supports them)
+    cancelled_at: epic.cancelled_at || null,
+    reason:       epic.reason       || null,
+    impact:       epic.impact       || null,
   }))
 }
 
