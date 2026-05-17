@@ -1,270 +1,265 @@
 import { useState, useEffect } from 'react'
-import { getEpics, getEpicsStats, getProjects, getVps } from '../api/epics'
+import { getEpics, getProjects, getVps } from '../api/epics'
 import { getSyncStatus, triggerSync } from '../api/sync'
 import { useAuth } from '../context/AuthContext'
 import dayjs from 'dayjs'
 
-// ── Helpers ────────────────────────────────────────────────────────────────
+// ── Constants ──────────────────────────────────────────────────────────────
 
-const STATUS_COLUMNS = [
-  { key: 'por_iniciar',   label: 'POR INICIAR',      accent: 'text-on-surface-variant', badge: 'bg-surface-container' },
-  { key: 'en_desarrollo', label: 'EN DESARROLLO',    accent: 'text-primary',            badge: 'bg-primary-container text-on-primary' },
-  { key: 'en_pruebas',    label: 'EN PRUEBAS',       accent: 'text-on-surface-variant', badge: 'bg-surface-container' },
-  { key: 'en_revision',   label: 'EN RATIFICACIÓN',  accent: 'text-on-surface-variant', badge: 'bg-surface-container' },
-  { key: 'finalizada',    label: 'FINALIZADAS',      accent: 'text-secondary',          badge: 'bg-green-100 text-green-700' },
-]
-
-function groupByStatus(epics) {
-  return STATUS_COLUMNS.reduce((acc, col) => {
-    acc[col.key] = epics.filter((e) => e.estado_normalizado === col.key)
-    return acc
-  }, {})
-}
-
-// ── Sub-components ─────────────────────────────────────────────────────────
-
-const QUARTERS = ['Q1', 'Q2', 'Q3', 'Q4']
-const YEARS    = ['2024', '2025', '2026', '2027']
-
-function EmptyState({ icon = 'inbox', message = 'No hay datos disponibles' }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 gap-3 text-on-surface-variant">
-      <span className="material-symbols-outlined text-5xl opacity-40">{icon}</span>
-      <p className="text-body-base opacity-60">{message}</p>
-    </div>
-  )
-}
-
-function SelectFilter({ label, value, onChange, children }) {
-  return (
-    <div className="relative flex-1 min-w-[140px] max-w-[200px]">
-      <label className="absolute -top-2 left-2 px-1 bg-white text-[10px] font-bold text-primary uppercase">
-        {label}
-      </label>
-      <select
-        className="w-full pl-3 pr-8 py-2 bg-white border border-outline-variant rounded-lg text-body-base text-on-surface appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[44px]"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        {children}
-      </select>
-      <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-secondary pointer-events-none text-sm">
-        expand_more
-      </span>
-    </div>
-  )
-}
-
-function FilterBar({ filters, vps, projects, onChange, onClear }) {
-  // Squads visibles: si hay VP seleccionada, solo los de esa VP
-  const visibleSquads = filters.vp
-    ? projects.filter((p) => p.vp === filters.vp)
-    : projects
-
-  function handleVpChange(v) {
-    // Al cambiar VP, resetear squad si ya no pertenece a la nueva VP
-    const squadStillValid = v === '' || projects.some((p) => p.project_key === filters.squad && p.vp === v)
-    onChange({ ...filters, vp: v, squad: squadStillValid ? filters.squad : '' })
-  }
-
-  return (
-    <div className="bg-white p-4 rounded border border-outline-variant shadow-card mb-2">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="material-symbols-outlined text-secondary text-sm">filter_alt</span>
-        <span className="text-label-caps text-secondary uppercase">Filtros Ejecutivos:</span>
-      </div>
-      <div className="flex flex-wrap gap-3 items-end">
-        <SelectFilter label="VP" value={filters.vp} onChange={handleVpChange}>
-          <option value="">Todas las VPs</option>
-          {vps.map((vp) => <option key={vp} value={vp}>{vp}</option>)}
-        </SelectFilter>
-
-        <SelectFilter label="Squad" value={filters.squad} onChange={(v) => onChange({ ...filters, squad: v })}>
-          <option value="">Todos los Squads</option>
-          {visibleSquads.map((p) => (
-            <option key={p.project_key} value={p.project_key}>{p.project_name || p.project_key}</option>
-          ))}
-        </SelectFilter>
-
-        <SelectFilter label="Trimestre" value={filters.quarter} onChange={(v) => onChange({ ...filters, quarter: v })}>
-          <option value="">Todos los trimestres</option>
-          {QUARTERS.map((q) => <option key={q} value={q}>{q}</option>)}
-        </SelectFilter>
-
-        <SelectFilter label="Año" value={filters.year} onChange={(v) => onChange({ ...filters, year: v })}>
-          <option value="">Todos los años</option>
-          {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
-        </SelectFilter>
-
-        <button
-          onClick={onClear}
-          className="min-h-[44px] px-4 py-2 border border-primary text-primary text-label-caps rounded-lg hover:bg-primary/5 transition-colors"
-        >
-          Limpiar Filtros
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function KpiCard({ label, value, sub, icon, iconColor = 'text-on-surface-variant', children }) {
-  return (
-    <div className="bg-white p-6 rounded border border-outline-variant shadow-card flex flex-col">
-      <div className="flex justify-between items-start mb-4 min-h-[4rem]">
-        <span className="text-label-caps text-secondary">{label}</span>
-        <span className={`material-symbols-outlined ${iconColor} cursor-help flex-shrink-0 ml-2`}>{icon || 'info'}</span>
-      </div>
-      <div className="mb-4">
-        <p className="text-metric-display text-primary">{value}</p>
-        {sub && <p className="text-data-label text-on-surface-variant mt-2">{sub}</p>}
-      </div>
-      {children}
-    </div>
-  )
-}
-
-function EpicCard({ epic, isDone }) {
-  const isOverdue = epic.due_date && dayjs(epic.due_date).isBefore(dayjs()) && epic.status !== 'Done'
-  return (
-    <div
-      className={`bg-surface-container-lowest p-3 rounded border border-outline-variant
-        hover:border-primary transition-colors cursor-pointer group
-        ${isDone ? '' : 'border-l-4 border-l-primary'}`}
-    >
-      <p className="text-body-base font-bold text-primary mb-1 line-clamp-2">{epic.epic_name}</p>
-      {epic.priority_status && (
-        <div className="flex gap-1 mb-2">
-          <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold rounded">
-            {epic.priority_status}
-          </span>
-        </div>
-      )}
-      <div className="flex justify-between items-center">
-        <span className="text-data-label text-secondary">{epic.project_key}</span>
-        {epic.due_date && (
-          <span className={`text-data-label ${isOverdue ? 'text-error font-bold' : 'text-secondary'}`}>
-            {dayjs(epic.due_date).format('DD MMM')}
-          </span>
-        )}
-      </div>
-      {isDone && (
-        <div className="flex justify-between items-start mt-1">
-          <p className="text-data-label text-secondary">
-            Completado {epic.updated_at ? dayjs(epic.updated_at).format('DD MMM') : '—'}
-          </p>
-          <span className="material-symbols-outlined text-green-600 text-sm">verified</span>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function KanbanBoard({ grouped, hasData }) {
-  return (
-    <section className="bg-white p-6 rounded border border-outline-variant shadow-card">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-label-caps text-secondary mb-1">ESTADO DE LAS INICIATIVAS</h2>
-          <p className="text-body-base text-on-surface-variant">Distribución actual del portfolio estratégico</p>
-        </div>
-        <button className="text-primary text-label-caps flex items-center gap-1 hover:underline">
-          <span className="material-symbols-outlined text-sm">filter_list</span> Filtrar Vista
-        </button>
-      </div>
-
-      {!hasData ? (
-        <EmptyState icon="view_kanban" message="Sin épicas para mostrar. Ejecuta la sincronización con Jira." />
-      ) : (
-        <div className="flex flex-col md:flex-row gap-4 overflow-x-auto pb-2">
-          {STATUS_COLUMNS.map((col) => {
-            const items = grouped[col.key] || []
-            const isDone = col.key === 'Done'
-            return (
-              <div key={col.key} className="flex flex-col gap-3 md:min-w-[180px] md:flex-1">
-                <div className="flex items-center justify-between border-b border-outline-variant pb-2 mb-1">
-                  <span className={`text-label-caps ${col.accent} uppercase`}>{col.label}</span>
-                  <span className={`text-data-label ${col.badge} px-2 rounded-full`}>{items.length}</span>
-                </div>
-                <div
-                  className={`max-h-[360px] overflow-y-auto space-y-3 pr-1 custom-scrollbar
-                    ${isDone ? 'opacity-60 grayscale hover:opacity-100 hover:grayscale-0 transition-all' : ''}`}
-                >
-                  {items.length === 0 ? (
-                    <p className="text-data-label text-on-surface-variant text-center py-4">Sin épicas</p>
-                  ) : (
-                    items.map((epic) => <EpicCard key={epic.id} epic={epic} isDone={isDone} />)
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </section>
-  )
-}
+const QUARTERS    = ['Q1', 'Q2', 'Q3', 'Q4']
+const YEARS       = ['2024', '2025', '2026', '2027']
+const DONE_STATUSES = ['finalizada', 'en_prd']
 
 const ESTADO_LABELS = {
-  por_iniciar:  'Por Iniciar',
+  por_iniciar:   'Por Iniciar',
   en_desarrollo: 'En Desarrollo',
-  en_pruebas:   'En Pruebas',
-  en_revision:  'En Ratificación',
-  en_prd:       'En Producción',
-  finalizada:   'Finalizada',
+  en_pruebas:    'En Pruebas',
+  en_revision:   'En Ratificación',
+  en_prd:        'En Producción',
+  finalizada:    'Finalizada',
 }
+
+const ESTADO_DOT = {
+  por_iniciar:   'bg-slate-400',
+  en_desarrollo: 'bg-blue-500',
+  en_pruebas:    'bg-amber-500',
+  en_revision:   'bg-purple-500',
+  en_prd:        'bg-green-500',
+  finalizada:    'bg-green-600',
+}
+
+const ESTADO_TEXT = {
+  por_iniciar:   'text-slate-500',
+  en_desarrollo: 'text-blue-600',
+  en_pruebas:    'text-amber-600',
+  en_revision:   'text-purple-600',
+  en_prd:        'text-green-600',
+  finalizada:    'text-green-700',
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+const isCancelledOrAtRisk = (e) => {
+  const v = (e.estado_iniciativa || '').toLowerCase().trim()
+  return v === 'cancelada' || v === 'en riesgo'
+}
+
+// ── Filter Bar ─────────────────────────────────────────────────────────────
+
+function FilterBar({ filters, vps, projects, onChange, onClear, onSync, syncing, isAdmin }) {
+  const visibleSquads = filters.vp ? projects.filter(p => p.vp === filters.vp) : projects
+
+  function handleVpChange(v) {
+    const valid = v === '' || projects.some(p => p.project_key === filters.squad && p.vp === v)
+    onChange({ ...filters, vp: v, squad: valid ? filters.squad : '' })
+  }
+
+  const hasFilters = Object.values(filters).some(Boolean)
+
+  return (
+    <div className="bg-white border-b border-outline-variant px-4 sm:px-6 py-2.5 flex flex-wrap items-center gap-2 sticky top-0 z-10 shadow-sm">
+
+      {/* Icon */}
+      <span className="material-symbols-outlined text-secondary text-base hidden sm:block">filter_alt</span>
+
+      {/* Selects */}
+      {[
+        {
+          value: filters.vp,
+          onChange: handleVpChange,
+          placeholder: 'VP',
+          options: vps.map(v => ({ value: v, label: v })),
+        },
+        {
+          value: filters.squad,
+          onChange: v => onChange({ ...filters, squad: v }),
+          placeholder: 'Squad',
+          options: visibleSquads.map(p => ({ value: p.project_key, label: p.project_name || p.project_key })),
+        },
+        {
+          value: filters.quarter,
+          onChange: v => onChange({ ...filters, quarter: v }),
+          placeholder: 'Trimestre',
+          options: QUARTERS.map(q => ({ value: q, label: q })),
+        },
+        {
+          value: filters.year,
+          onChange: v => onChange({ ...filters, year: v }),
+          placeholder: 'Año',
+          options: YEARS.map(y => ({ value: y, label: y })),
+        },
+      ].map(({ value, onChange: onC, placeholder, options }) => (
+        <select
+          key={placeholder}
+          value={value}
+          onChange={e => onC(e.target.value)}
+          className="h-8 px-2 pr-7 text-sm border border-outline-variant rounded-md bg-white text-on-surface
+                     focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary
+                     appearance-none bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 20 20%22 fill=%22%236b7280%22><path fill-rule=%22evenodd%22 d=%22M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z%22 clip-rule=%22evenodd%22/></svg>')] bg-no-repeat bg-[right_0.4rem_center] bg-[length:1rem]"
+        >
+          <option value="">{placeholder}</option>
+          {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      ))}
+
+      {hasFilters && (
+        <button
+          onClick={onClear}
+          className="h-8 px-2.5 text-sm text-secondary border border-outline-variant rounded-md
+                     hover:bg-surface-container transition-colors flex items-center gap-1"
+        >
+          <span className="material-symbols-outlined text-sm">close</span>
+          <span className="hidden sm:inline">Limpiar</span>
+        </button>
+      )}
+
+      <div className="flex-1" />
+
+      {hasFilters && (
+        <span className="text-xs text-on-surface-variant hidden sm:block">
+          {Object.values(filters).filter(Boolean).join(' · ')}
+        </span>
+      )}
+
+      {isAdmin && (
+        <button
+          onClick={onSync}
+          disabled={syncing}
+          className="h-8 px-3 text-sm font-medium bg-primary text-white rounded-md
+                     hover:opacity-90 active:opacity-80 transition-opacity disabled:opacity-50
+                     flex items-center gap-1.5"
+        >
+          <span className={`material-symbols-outlined text-sm ${syncing ? 'animate-spin' : ''}`}>sync</span>
+          <span className="hidden sm:inline">{syncing ? 'Sincronizando…' : 'Sincronizar'}</span>
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ── KPI Grid ───────────────────────────────────────────────────────────────
+
+function KpiGrid({ epics, total }) {
+  const withLead   = epics.filter(e => e.lead_time_days != null)
+  const avgLead    = withLead.length
+    ? Math.round(withLead.reduce((s, e) => s + e.lead_time_days, 0) / withLead.length)
+    : null
+  const inDev      = epics.filter(e => e.estado_normalizado === 'en_desarrollo' && !isCancelledOrAtRisk(e)).length
+  const done       = epics.filter(e => DONE_STATUSES.includes(e.estado_normalizado) || e.fecha_done != null).length
+  const atRisk     = epics.filter(isCancelledOrAtRisk).length
+  const icr        = total > 0 ? Math.round((done / total) * 100) : 0
+
+  const cards = [
+    { label: 'Épicas Totales',         value: total,                      sub: 'en el período',         icon: 'layers',         color: 'text-primary' },
+    { label: 'En Desarrollo',          value: inDev,                      sub: 'iniciativas activas',    icon: 'rocket_launch',  color: 'text-blue-500' },
+    { label: 'Terminadas',             value: done,                       sub: `ICR ${icr}%`,            icon: 'task_alt',       color: 'text-green-600' },
+    { label: 'Canceladas / En Riesgo', value: atRisk,                     sub: 'requieren atención',     icon: 'warning',        color: 'text-amber-500' },
+    { label: 'Lead Time Promedio',     value: avgLead != null ? `${avgLead}d` : '—', sub: 'días por épica', icon: 'schedule', color: 'text-secondary' },
+  ]
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      {cards.map(({ label, value, sub, icon, color }) => (
+        <div key={label} className="bg-white rounded-xl border border-outline-variant p-4 flex flex-col gap-2 hover:shadow-md transition-shadow">
+          <div className="flex items-start justify-between gap-2">
+            <span className="text-[10px] font-bold tracking-wider text-secondary uppercase leading-snug">{label}</span>
+            <span
+              className={`material-symbols-outlined text-xl flex-shrink-0 ${color}`}
+              style={{ fontVariationSettings: '"FILL" 1' }}
+            >{icon}</span>
+          </div>
+          <p className="text-4xl font-bold text-on-surface tabular-nums">{value}</p>
+          <p className="text-[11px] text-on-surface-variant leading-snug">{sub}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── Table ──────────────────────────────────────────────────────────────────
 
 function InitiativesTable({ epics }) {
   return (
-    <section className="bg-white rounded border border-outline-variant shadow-card overflow-hidden">
-      <div className="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
-        <div className="flex items-center gap-3">
+    <div className="bg-white rounded-xl border border-outline-variant overflow-hidden">
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-outline-variant flex items-center justify-between">
+        <div className="flex items-center gap-2">
           <span className="material-symbols-outlined text-secondary">table_chart</span>
-          <h2 className="text-label-caps text-primary">DETALLE DE INICIATIVAS</h2>
+          <h2 className="text-sm font-bold tracking-wider text-on-surface uppercase">Detalle de Iniciativas</h2>
         </div>
-        <span className="text-data-label text-on-surface-variant">{epics.length} épicas totales</span>
+        <span className="text-xs text-on-surface-variant bg-surface-container px-2 py-1 rounded-full">
+          {epics.length} épica{epics.length !== 1 ? 's' : ''}
+        </span>
       </div>
 
       {epics.length === 0 ? (
-        <EmptyState icon="table_rows" message="No hay épicas sincronizadas aún. Ejecuta la sincronización desde el panel Admin." />
+        <div className="flex flex-col items-center justify-center py-16 gap-3 text-on-surface-variant">
+          <span className="material-symbols-outlined text-5xl opacity-30">table_rows</span>
+          <p className="text-sm opacity-60">No hay épicas para los filtros seleccionados</p>
+        </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-sm text-left">
             <thead>
-              <tr className="bg-surface-container-lowest">
-                {[
-                  { label: 'ÉPICA',              cls: '' },
-                  { label: 'ESTADO',             cls: '' },
-                  { label: 'ASSIGNEE',           cls: 'hidden md:table-cell' },
-                  { label: 'LEAD TIME',          cls: 'hidden sm:table-cell' },
-                  { label: 'FECHA PASE A PRD',   cls: 'hidden md:table-cell' },
-                ].map(({ label, cls }) => (
-                  <th key={label} className={`px-6 py-4 text-label-caps text-secondary ${cls}`}>{label}</th>
-                ))}
+              <tr className="bg-slate-50 border-b border-outline-variant">
+                <th className="px-5 py-3 text-[11px] font-bold tracking-wider text-secondary uppercase">Épica</th>
+                <th className="px-5 py-3 text-[11px] font-bold tracking-wider text-secondary uppercase">Estado</th>
+                <th className="px-5 py-3 text-[11px] font-bold tracking-wider text-secondary uppercase hidden md:table-cell">Responsable</th>
+                <th className="px-5 py-3 text-[11px] font-bold tracking-wider text-secondary uppercase hidden sm:table-cell">Sprint Inicio</th>
+                <th className="px-5 py-3 text-[11px] font-bold tracking-wider text-secondary uppercase hidden sm:table-cell text-right">Lead Time</th>
+                <th className="px-5 py-3 text-[11px] font-bold tracking-wider text-secondary uppercase hidden md:table-cell text-right">Fecha PRD</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-outline-variant">
-              {epics.map((epic) => {
-                const isOverdue = epic.due_date && dayjs(epic.due_date).isBefore(dayjs()) && epic.status !== 'Done'
+            <tbody>
+              {epics.map((epic, idx) => {
+                const dot   = ESTADO_DOT[epic.estado_normalizado]  || 'bg-slate-300'
+                const color = ESTADO_TEXT[epic.estado_normalizado] || 'text-on-surface-variant'
+                const label = ESTADO_LABELS[epic.estado_normalizado] || epic.status || '—'
+                const isDone = DONE_STATUSES.includes(epic.estado_normalizado)
+
                 return (
-                  <tr key={epic.id} className="hover:bg-surface-container-low transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`h-2 w-2 rounded-full ${isOverdue ? 'bg-error' : 'bg-primary'}`} />
-                        <span className="text-body-base font-bold text-primary">{epic.epic_name}</span>
+                  <tr
+                    key={epic.id}
+                    className={`border-b border-outline-variant last:border-0 hover:bg-primary/[0.03] transition-colors
+                      ${idx % 2 !== 0 ? 'bg-slate-50/60' : ''}`}
+                  >
+                    {/* Épica */}
+                    <td className="px-5 py-3.5 max-w-[260px]">
+                      <div className="flex items-center gap-2.5">
+                        <div className={`h-2 w-2 rounded-full flex-shrink-0 ${isDone ? 'bg-green-500' : 'bg-primary'}`} />
+                        <span className="font-semibold text-on-surface leading-snug line-clamp-2">{epic.epic_name}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-body-base text-on-surface-variant">
-                      {ESTADO_LABELS[epic.estado_normalizado] || epic.status || '—'}
+
+                    {/* Estado */}
+                    <td className="px-5 py-3.5 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <div className={`h-2 w-2 rounded-full flex-shrink-0 ${dot}`} />
+                        <span className={`text-sm font-medium ${color}`}>{label}</span>
+                      </div>
                     </td>
-                    <td className="hidden md:table-cell px-6 py-4 text-body-base text-on-surface-variant">{epic.assignee || '—'}</td>
-                    <td className="hidden sm:table-cell px-6 py-4 text-body-base">
+
+                    {/* Responsable */}
+                    <td className="hidden md:table-cell px-5 py-3.5 text-on-surface-variant whitespace-nowrap">
+                      {epic.assignee || '—'}
+                    </td>
+
+                    {/* Sprint Inicio */}
+                    <td className="hidden sm:table-cell px-5 py-3.5 text-on-surface-variant whitespace-nowrap">
+                      {epic.sprint_inicio || '—'}
+                    </td>
+
+                    {/* Lead Time */}
+                    <td className="hidden sm:table-cell px-5 py-3.5 text-right whitespace-nowrap">
                       {epic.lead_time_days != null ? (
-                        <span className={epic.lead_time_days > 30 ? 'text-error font-bold' : 'text-on-surface'}>
-                          {epic.lead_time_days} días
+                        <span className={`font-semibold tabular-nums ${epic.lead_time_days > 30 ? 'text-error' : 'text-on-surface'}`}>
+                          {epic.lead_time_days}d
                         </span>
-                      ) : '—'}
+                      ) : <span className="text-on-surface-variant">—</span>}
                     </td>
-                    <td className="hidden md:table-cell px-6 py-4 text-body-base text-on-surface-variant">
+
+                    {/* Fecha PRD */}
+                    <td className="hidden md:table-cell px-5 py-3.5 text-on-surface-variant text-right whitespace-nowrap">
                       {epic.fecha_prd ? dayjs(epic.fecha_prd).format('DD MMM YYYY') : '—'}
                     </td>
                   </tr>
@@ -274,101 +269,55 @@ function InitiativesTable({ epics }) {
           </table>
         </div>
       )}
-    </section>
+    </div>
   )
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────
+// ── Main Page ──────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
   const { isAdmin, token } = useAuth()
-  const [epics, setEpics]           = useState([])
-  const [stats, setStats]           = useState(null)
-  const [syncStatus, setSyncStatus] = useState(null)
-  const [projects, setProjects]     = useState([])
-  const [vps, setVps]               = useState([])
-  const [loading, setLoading]       = useState(true)
-  const [syncing, setSyncing]       = useState(false)
-  const [filters, setFilters]       = useState({ vp: '', squad: '', quarter: '', year: '' })
+  const [epics,    setEpics]    = useState([])
+  const [projects, setProjects] = useState([])
+  const [vps,      setVps]      = useState([])
+  const [loading,  setLoading]  = useState(true)
+  const [syncing,  setSyncing]  = useState(false)
+  const [filters,  setFilters]  = useState({ vp: '', squad: '', quarter: '', year: '' })
 
   useEffect(() => {
     Promise.all([
       getEpics().catch(() => []),
-      getEpicsStats().catch(() => null),
-      getSyncStatus().catch(() => ({ projects: [] })),
+      getSyncStatus().catch(() => null),
       getProjects().catch(() => []),
       getVps().catch(() => []),
-    ]).then(([epicsData, statsData, syncData, projectsData, vpsData]) => {
+    ]).then(([epicsData, , projectsData, vpsData]) => {
       setEpics(epicsData)
-      setStats(statsData)
-      setSyncStatus(syncData)
       setProjects(projectsData)
       setVps(vpsData)
     }).finally(() => setLoading(false))
   }, [])
 
-  // VP filtra por el campo vp del proyecto; Squad por project_key; año/quarter por campos ETL
-  const filteredEpics = epics.filter((e) => {
-    if (filters.squad && e.project_key !== filters.squad) return false
-    if (filters.vp) {
-      const proj = projects.find((p) => p.project_key === e.project_key)
-      if (!proj || proj.vp !== filters.vp) return false
-    }
+  const filteredEpics = epics.filter(e => {
+    if (filters.squad   && e.project_key !== filters.squad)       return false
     if (filters.quarter && String(e.quarter) !== filters.quarter) return false
     if (filters.year    && String(e.year)    !== filters.year)    return false
+    if (filters.vp) {
+      const proj = projects.find(p => p.project_key === e.project_key)
+      if (!proj || proj.vp !== filters.vp) return false
+    }
     return true
   })
-
-  const grouped = groupByStatus(filteredEpics)
 
   const handleSync = async () => {
     setSyncing(true)
     try {
       await triggerSync(token)
-      const [epicsData, statsData, syncData] = await Promise.all([
-        getEpics(), getEpicsStats(), getSyncStatus(),
-      ])
-      setEpics(epicsData)
-      setStats(statsData)
-      setSyncStatus(syncData)
+      const data = await getEpics()
+      setEpics(data)
     } finally {
       setSyncing(false)
     }
   }
-
-  const totalEpics = filteredEpics.length
-  const hasEpics   = epics.length > 0
-  const isFiltered = totalEpics !== epics.length
-
-  const avgLead = (() => {
-    const withLead = filteredEpics.filter((e) => e.lead_time_days != null)
-    if (!withLead.length) return null
-    return Math.round(withLead.reduce((s, e) => s + e.lead_time_days, 0) / withLead.length)
-  })()
-
-  // HU KPIs: cancelada/en riesgo prevalece sobre cualquier otro estado
-  const isCancelledOrAtRisk = (e) => {
-    const est = (e.estado_iniciativa || '').toLowerCase().trim()
-    return est === 'cancelada' || est === 'en riesgo'
-  }
-
-  const cancelledCount = filteredEpics.filter(isCancelledOrAtRisk).length
-
-  const inProg = filteredEpics.filter(
-    (e) => e.estado_normalizado === 'en_desarrollo' && !isCancelledOrAtRisk(e)
-  ).length
-
-  // Terminadas: finalizada + en_prd cuentan como terminadas, o si tiene fecha_done
-  const DONE_STATUSES = ['finalizada', 'en_prd']
-  const doneCount = filteredEpics.filter(
-    (e) => DONE_STATUSES.includes(e.estado_normalizado) || e.fecha_done != null
-  ).length
-
-  const blockedCount = filteredEpics.filter((e) =>
-    e.status === 'Blocked' || e.status === 'On Hold' || e.status === 'Bloqueado'
-  ).length
-
-  const icr = totalEpics > 0 ? Math.round((doneCount / totalEpics) * 100) : 0
 
   if (loading) {
     return (
@@ -378,122 +327,54 @@ export default function DashboardPage() {
     )
   }
 
+  const total     = filteredEpics.length
+  const hasData   = epics.length > 0
+  const hasFilter = Object.values(filters).some(Boolean)
+
   return (
-    <div className="space-y-card-gap max-w-[1440px] mx-auto">
+    <div className="flex flex-col gap-5">
 
-      {/* Filter Bar */}
-      <FilterBar
-        filters={filters}
-        vps={vps}
-        projects={projects}
-        onChange={setFilters}
-        onClear={() => setFilters({ vp: '', squad: '', quarter: '', year: '' })}
-      />
+      {/* ① Filter Bar — break out of main padding, sticky top */}
+      <div className="-mx-4 -mt-4 md:-mx-6 md:-mt-6">
+        <FilterBar
+          filters={filters}
+          vps={vps}
+          projects={projects}
+          onChange={setFilters}
+          onClear={() => setFilters({ vp: '', squad: '', quarter: '', year: '' })}
+          onSync={handleSync}
+          syncing={syncing}
+          isAdmin={isAdmin}
+        />
+      </div>
 
-      {/* Summary Header */}
-      <section>
-        <div className="bg-white p-6 rounded border border-outline-variant shadow-card flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h2 className="text-label-caps text-secondary mb-1">RESUMEN DE TRANSFORMACIÓN</h2>
-            <h3 className="text-headline-lg text-primary">Rendimiento del Portfolio — Épicas Activas</h3>
-            {isFiltered && (
-              <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-primary-container text-on-primary text-[10px] font-bold rounded-full">
-                <span className="material-symbols-outlined text-[12px]">filter_alt</span>
-                Filtro activo — {totalEpics} de {epics.length} épicas
-              </span>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-6 sm:gap-12 items-center">
-            <div className="text-center">
-              <p className="text-label-caps text-on-surface-variant">CUMPLIMIENTO (ICR)</p>
-              <p className="text-metric-display text-primary">{hasEpics ? `${icr}%` : '—'}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-label-caps text-on-surface-variant">ÉPICAS TOTALES</p>
-              <p className="text-metric-display text-primary">{hasEpics ? totalEpics : '—'}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-label-caps text-on-surface-variant mb-2">ESTADO GENERAL</p>
-              {hasEpics ? (
-                <div className="flex items-center justify-center">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                    <span className="material-symbols-outlined text-green-700" style={{ fontVariationSettings: '"FILL" 1' }}>
-                      check_circle
-                    </span>
-                  </span>
-                  <span className="ml-3 text-headline-md text-green-700">Saludable</span>
-                </div>
-              ) : (
-                <span className="text-body-base text-on-surface-variant">Sin datos</span>
-              )}
-            </div>
-            {isAdmin && (
-              <button
-                onClick={handleSync}
-                disabled={syncing}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-container text-on-primary rounded-lg text-label-caps hover:opacity-90 transition-opacity disabled:opacity-50"
-              >
-                <span className={`material-symbols-outlined text-sm ${syncing ? 'animate-spin' : ''}`}>sync</span>
-                {syncing ? 'Sincronizando…' : 'Sincronizar Jira'}
-              </button>
-            )}
-          </div>
+      <div className="space-y-5 max-w-[1440px] mx-auto w-full">
+
+        {/* ② Page Title — Z top-left anchor */}
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-on-surface">Portfolio de Iniciativas</h1>
+          <p className="text-sm text-on-surface-variant mt-0.5">
+            {hasFilter
+              ? `${total} épica${total !== 1 ? 's' : ''} · ${Object.values(filters).filter(Boolean).join(' · ')}`
+              : `${total} épica${total !== 1 ? 's' : ''} · Todos los squads`}
+          </p>
         </div>
-      </section>
 
-      {/* KPI Grid — solo se renderiza si hay datos */}
-      {hasEpics ? (
-        <section className="grid gap-card-gap grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          <KpiCard label="LEAD TIME PROMEDIO" value={avgLead != null ? `${avgLead}` : '—'} sub="días promedio por épica">
-            <div className="h-20 w-full bg-slate-50 flex items-end gap-1 px-1 mt-4">
-              {[40, 60, 50, 70, 35, 30].map((h, i) => (
-                <div key={i} className="w-full bg-primary-container rounded-t" style={{ height: `${h}%` }} />
-              ))}
+        {/* ③ KPIs — Z horizontal scan */}
+        {hasData
+          ? <KpiGrid epics={filteredEpics} total={total} />
+          : (
+            <div className="bg-white rounded-xl border border-outline-variant flex flex-col items-center justify-center py-16 gap-3 text-on-surface-variant">
+              <span className="material-symbols-outlined text-5xl opacity-30">bar_chart</span>
+              <p className="text-sm opacity-60">Sin datos. Sincroniza Jira para comenzar.</p>
             </div>
-          </KpiCard>
+          )
+        }
 
-          <KpiCard label="ÉPICAS EN DESARROLLO" value={inProg} sub="Activas este período">
-          </KpiCard>
+        {/* ④ Detail Table — Z landing point */}
+        <InitiativesTable epics={filteredEpics} />
 
-          <KpiCard
-            label="ÉPICAS CANCELADAS / EN RIESGO"
-            value={cancelledCount}
-            sub="Filtro de eficiencia activo"
-            iconColor="text-error"
-          >
-            <div className="mt-10 relative h-2 bg-surface-container-high rounded-full overflow-hidden">
-              <div
-                className="absolute left-0 top-0 h-full bg-error"
-                style={{ width: `${Math.min(100, (cancelledCount / Math.max(1, totalEpics)) * 100)}%` }}
-              />
-            </div>
-          </KpiCard>
-
-          <KpiCard label="ÉPICAS BLOQUEADAS" value={blockedCount} sub="Optimización de capacidad">
-            <div className="mt-6 flex items-center justify-between">
-              <span className="text-data-label text-on-surface-variant">Revisado por Comité Agile</span>
-            </div>
-          </KpiCard>
-
-          <KpiCard label="ÉPICAS TERMINADAS" value={doneCount} sub={`Ciclo completo — ${totalEpics} totales`}>
-            <div className="mt-8 flex items-center gap-2">
-              <span className="material-symbols-outlined text-green-700">emoji_events</span>
-              <span className="text-data-label text-green-700 uppercase font-bold">
-                {doneCount > 0 ? 'Meta en curso' : 'Sin completadas'}
-              </span>
-            </div>
-          </KpiCard>
-        </section>
-      ) : (
-        <section className="bg-white rounded border border-outline-variant shadow-card">
-          <EmptyState icon="bar_chart" message="No hay métricas disponibles. Sincroniza los datos de Jira para comenzar." />
-        </section>
-      )}
-
-      {/* Detail Table */}
-      <InitiativesTable epics={filteredEpics} />
-
+      </div>
     </div>
   )
 }
-
