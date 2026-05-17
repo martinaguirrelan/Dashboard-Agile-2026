@@ -261,13 +261,13 @@ def fetch_epics_for_project(project_key: str) -> list[dict[str, Any]]:
                     "year":             year,
                     "quarter":          quarter,
                     "priority_quarter":  f"{quarter} {year}" if quarter and year else None,
-                    "sprint_inicio":     _parse_sprint(f.get(settings.jira_field_sprint_inicio)),
+                    "sprint_inicio":     (f.get(settings.jira_field_sprint_inicio) or {}).get("value"),
                     "estimacion_inicial": _parse_numeric(f.get(settings.jira_field_estimacion_ini)),
                     "estimacion_final":   _parse_numeric(f.get(settings.jira_field_estimacion_fin)),
                     "estado_iniciativa":  (f.get(settings.jira_field_estado_iniciativa) or {}).get("value"),
                     "fecha_done":         _parse_date(f.get(settings.jira_field_fecha_done)),
                     "fecha_prd":          _parse_date(f.get(settings.jira_field_fecha_prd)),
-                    "sprint_fin":         _parse_sprint(f.get(settings.jira_field_sprint_fin), last=True),
+                    "sprint_fin":         (f.get(settings.jira_field_sprint_fin) or {}).get("value"),
                 })
 
             next_page_token = data.get("nextPageToken")
