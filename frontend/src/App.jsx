@@ -7,6 +7,7 @@ import RoadmapPage from './pages/RoadmapPage'
 import TeamHealthPage from './pages/TeamHealthPage'
 import LoginPage from './pages/LoginPage'
 import AdminPage from './pages/AdminPage'
+import SquadDetailPage from './pages/SquadDetailPage'
 
 function PrivateRoute({ children }) {
   const { isAdmin } = useAuth()
@@ -21,6 +22,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/squad/:projectKey" element={<SquadDetailPage />} />
       <Route element={<Layout />}>
         <Route path="/"        element={<DashboardPage />} />
         <Route path="/dora"    element={<DoraMetricsPage />} />
