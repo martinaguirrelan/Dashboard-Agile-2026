@@ -55,12 +55,17 @@ ALTER TABLE jira_epics
 -- Migration: campos ciclo de vida iniciativas (US-5)
 ALTER TABLE jira_epics
     ADD COLUMN IF NOT EXISTS sprint_inicio      TEXT,
-    ADD COLUMN IF NOT EXISTS estimacion_inicial NUMERIC,
-    ADD COLUMN IF NOT EXISTS estimacion_final   NUMERIC,
+    ADD COLUMN IF NOT EXISTS estimacion_inicial TEXT,
+    ADD COLUMN IF NOT EXISTS estimacion_final   TEXT,
     ADD COLUMN IF NOT EXISTS estado_iniciativa  TEXT,
     ADD COLUMN IF NOT EXISTS fecha_done         TIMESTAMPTZ,
     ADD COLUMN IF NOT EXISTS fecha_prd          TIMESTAMPTZ,
     ADD COLUMN IF NOT EXISTS sprint_fin         TEXT;
+
+-- Migration: estimacion_inicial/final cambian de NUMERIC a TEXT (tallas T-shirt: S, M, L, XL)
+ALTER TABLE jira_epics
+    ALTER COLUMN estimacion_inicial TYPE TEXT USING estimacion_inicial::TEXT,
+    ALTER COLUMN estimacion_final   TYPE TEXT USING estimacion_final::TEXT;
 
 -- 3. Trigger updated_at automático
 CREATE OR REPLACE FUNCTION _set_updated_at()

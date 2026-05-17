@@ -32,8 +32,8 @@ class JiraEpicOut(BaseModel):
     year: int | None
     quarter: str | None
     sprint_inicio:      str | None
-    estimacion_inicial: float | None
-    estimacion_final:   float | None
+    estimacion_inicial: str | None
+    estimacion_final:   str | None
     estado_iniciativa:  str | None
     fecha_done:         datetime | None
     fecha_prd:          datetime | None
