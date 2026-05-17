@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { getEpics, getEpicsStats, getProjects, getVps } from '../api/epics'
 import { getSyncStatus, triggerSync } from '../api/sync'
 import { useAuth } from '../context/AuthContext'
@@ -249,8 +250,13 @@ function InitiativesTable({ epics }) {
                   <tr key={epic.id} className="hover:bg-surface-container-low transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className={`h-2 w-2 rounded-full ${isOverdue ? 'bg-error' : 'bg-primary'}`} />
-                        <span className="text-body-base font-bold text-primary">{epic.epic_name}</span>
+                        <div className={`h-2 w-2 rounded-full flex-shrink-0 ${isOverdue ? 'bg-error' : 'bg-primary'}`} />
+                        <Link
+                          to={`/squad/${epic.project_key}`}
+                          className="text-body-base font-bold text-primary hover:underline"
+                        >
+                          {epic.epic_name}
+                        </Link>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-body-base text-on-surface-variant">
