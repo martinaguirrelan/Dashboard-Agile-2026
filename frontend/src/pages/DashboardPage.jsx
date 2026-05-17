@@ -494,9 +494,6 @@ export default function DashboardPage() {
         </section>
       )}
 
-      {/* Kanban Board */}
-      <KanbanBoard grouped={grouped} hasData={hasEpics} />
-
       {/* Detail Table */}
       <InitiativesTable epics={filteredEpics} />
 
