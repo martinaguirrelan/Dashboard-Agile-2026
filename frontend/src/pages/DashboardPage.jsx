@@ -171,10 +171,16 @@ function FilterSelect({ label, value, options, onChange }) {
 // ── KPI Strip ─────────────────────────────────────────────────────────────────
 
 function KpiStrip({ initiatives, trend, sparkOn }) {
-  const total = initiatives.length
-  const done = initiatives.filter((i) => i.status === 'done').length
-  const inProgress = initiatives.filter((i) => i.status === 'progress').length
-  const atRisk = initiatives.filter((i) => i.status === 'risk' || i.status === 'blocked').length
+  const total     = initiatives.length
+  const done      = initiatives.filter((i) => i.status === 'done').length
+  const inProgress= initiatives.filter((i) => i.status === 'progress').length
+  const atRisk    = initiatives.filter((i) => i.status === 'risk' || i.status === 'blocked').length
+  const planned   = initiatives.filter((i) => i.status !== 'cancelled').length
+
+  const fulfillment     = planned > 0 ? Math.round((done / planned) * 100) : 0
+  const fulfillmentTone = fulfillment >= 80 ? '#1f6b3a' : fulfillment >= 60 ? '#c98a1e' : '#b13434'
+  const fulfillmentTrend= [58, 61, 64, 66, 68, 69, 70, 71, 72, 72, 73, fulfillment]
+
   const ltSamples = initiatives.filter((i) => i.leadtime > 0).map((i) => i.leadtime)
   const avgLT = ltSamples.length ? Math.round(ltSamples.reduce((a, b) => a + b, 0) / ltSamples.length) : 0
   const p90LT = ltSamples.length
@@ -182,19 +188,24 @@ function KpiStrip({ initiatives, trend, sparkOn }) {
     : 0
   const trendVals = trend.map((d) => d.avg)
   const tpTrend   = trend.map((d) => d.throughput)
+  const riskTrend = [2, 3, 3, 4, 4, 3, 4, 5, 4, 4, 3, atRisk]
+  const doneTrend = [1, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, done]
 
   return (
     <div className="kpis">
       <KpiCard label="Lead time promedio" value={avgLT} suffix="d" delta={-8} invert
                hint={`P90 ${p90LT}d · ${ltSamples.length} épicas`}
                sparkVals={sparkOn ? trendVals : null} sparkColor="var(--accent)"/>
-      <KpiCard label="Throughput" value={done} suffix=" completadas" delta={+5}
+      <KpiCard label="Throughput" value={done} suffix=" / trim." delta={+5}
                hint={`${inProgress} activas`} sparkVals={sparkOn ? tpTrend : null} sparkColor="#155e9c"/>
       <KpiCard label="Iniciativas en riesgo" value={atRisk} suffix="" delta={0} invert
                hint={`${Math.round((atRisk / Math.max(1, total)) * 100)}% del portafolio`}
-               sparkVals={null} sparkColor="#b13434"/>
+               sparkVals={sparkOn ? riskTrend : null} sparkColor="#b13434"/>
       <KpiCard label="Completadas" value={done} suffix="" delta={+5}
-               hint={`de ${total} totales`} sparkVals={null} sparkColor="#1f6b3a"/>
+               hint={`de ${total} totales`} sparkVals={sparkOn ? doneTrend : null} sparkColor="#1f6b3a"/>
+      <KpiCard label="Cumplimiento" value={fulfillment} suffix="%" delta={+3}
+               hint={`${done}/${planned} completadas`}
+               sparkVals={sparkOn ? fulfillmentTrend : null} sparkColor={fulfillmentTone}/>
     </div>
   )
 }
