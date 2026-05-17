@@ -37,6 +37,17 @@ function useTweaks(defaults) {
   return [values, setTweak]
 }
 
+const MONTHS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']
+function formatNow() {
+  const d = new Date()
+  const day  = String(d.getDate()).padStart(2, '0')
+  const mon  = MONTHS[d.getMonth()]
+  const year = d.getFullYear()
+  const hh   = String(d.getHours()).padStart(2, '0')
+  const mm   = String(d.getMinutes()).padStart(2, '0')
+  return `${day} ${mon} ${year}, ${hh}:${mm}`
+}
+
 function applyTheme(palette) {
   const [bg, ink, accent] = palette
   document.documentElement.style.setProperty('--bg', bg)
@@ -46,7 +57,7 @@ function applyTheme(palette) {
 
 // ── Header ────────────────────────────────────────────────────────────────────
 
-function Header({ filters, onChange, vps, squads, isAdmin, onSync, syncing }) {
+function Header({ filters, onChange, vps, squads, isAdmin, onSync, syncing, lastUpdate }) {
   return (
     <header className="hdr">
       <div className="hdr-brand">
@@ -64,6 +75,12 @@ function Header({ filters, onChange, vps, squads, isAdmin, onSync, syncing }) {
             <span>
               {filters.q !== 'all' ? `Q${filters.q}` : 'Año completo'} {filters.year}
             </span>
+            {lastUpdate && (
+              <>
+                <span className="dot-sep">·</span>
+                <span>Actualizado <em>{lastUpdate}</em></span>
+              </>
+            )}
             <span className="dot-sep">·</span>
             <span className="live"><i/>Datos en vivo</span>
             {isAdmin && (
@@ -578,6 +595,7 @@ export default function DashboardPage() {
   const [projects, setProjects]     = useState([])
   const [loading, setLoading]       = useState(true)
   const [syncing, setSyncing]       = useState(false)
+  const [lastUpdate, setLastUpdate] = useState(null)
 
   useEffect(() => {
     Promise.all([
@@ -586,6 +604,8 @@ export default function DashboardPage() {
     ]).then(([epicsData, projectsData]) => {
       setRawEpics(epicsData)
       setProjects(projectsData)
+    }).then(() => {
+      setLastUpdate(formatNow())
     }).finally(() => setLoading(false))
   }, [])
 
@@ -616,6 +636,7 @@ export default function DashboardPage() {
       const [epicsData, projectsData] = await Promise.all([getEpics(), getProjects()])
       setRawEpics(epicsData)
       setProjects(projectsData)
+      setLastUpdate(formatNow())
     } finally {
       setSyncing(false)
     }
@@ -646,6 +667,7 @@ export default function DashboardPage() {
           isAdmin={isAdmin}
           onSync={handleSync}
           syncing={syncing}
+          lastUpdate={lastUpdate}
         />
 
         <KpiStrip initiatives={filtered} trend={trend} sparkOn={t.sparkInKpi} />
