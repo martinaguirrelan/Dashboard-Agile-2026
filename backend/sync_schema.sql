@@ -62,6 +62,11 @@ ALTER TABLE jira_epics
     ADD COLUMN IF NOT EXISTS fecha_prd          TIMESTAMPTZ,
     ADD COLUMN IF NOT EXISTS sprint_fin         TEXT;
 
+-- Migration: fecha_done y fecha_prd cambian de TIMESTAMPTZ a DATE (solo fecha, sin hora)
+ALTER TABLE jira_epics
+    ALTER COLUMN fecha_done TYPE DATE USING fecha_done::DATE,
+    ALTER COLUMN fecha_prd  TYPE DATE USING fecha_prd::DATE;
+
 -- Migration: estimacion_inicial/final cambian de NUMERIC a TEXT (tallas T-shirt: S, M, L, XL)
 ALTER TABLE jira_epics
     ALTER COLUMN estimacion_inicial TYPE TEXT USING estimacion_inicial::TEXT,

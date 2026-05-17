@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID
 from pydantic import BaseModel
 
@@ -35,8 +35,8 @@ class JiraEpicOut(BaseModel):
     estimacion_inicial: str | None
     estimacion_final:   str | None
     estado_iniciativa:  str | None
-    fecha_done:         datetime | None
-    fecha_prd:          datetime | None
+    fecha_done:         date | None
+    fecha_prd:          date | None
     sprint_fin:         str | None
     created_at: datetime
     updated_at: datetime

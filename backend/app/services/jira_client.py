@@ -265,8 +265,8 @@ def fetch_epics_for_project(project_key: str) -> list[dict[str, Any]]:
                     "estimacion_inicial": (f.get(settings.jira_field_estimacion_ini) or {}).get("value"),
                     "estimacion_final":   (f.get(settings.jira_field_estimacion_fin) or {}).get("value"),
                     "estado_iniciativa":  (f.get(settings.jira_field_estado_iniciativa) or {}).get("value"),
-                    "fecha_done":         _parse_date(f.get(settings.jira_field_fecha_done)),
-                    "fecha_prd":          _parse_date(f.get(settings.jira_field_fecha_prd)),
+                    "fecha_done":         (dt := _parse_date(f.get(settings.jira_field_fecha_done))) and dt.date() or None,
+                    "fecha_prd":          (dt := _parse_date(f.get(settings.jira_field_fecha_prd))) and dt.date() or None,
                     "sprint_fin":         (f.get(settings.jira_field_sprint_fin) or {}).get("value"),
                 })
 
