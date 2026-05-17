@@ -204,6 +204,15 @@ function KanbanBoard({ grouped, hasData }) {
   )
 }
 
+const ESTADO_LABELS = {
+  por_iniciar:  'Por Iniciar',
+  en_desarrollo: 'En Desarrollo',
+  en_pruebas:   'En Pruebas',
+  en_revision:  'En Ratificación',
+  en_prd:       'En Producción',
+  finalizada:   'Finalizada',
+}
+
 function InitiativesTable({ epics }) {
   return (
     <section className="bg-white rounded border border-outline-variant shadow-card overflow-hidden">
@@ -223,12 +232,11 @@ function InitiativesTable({ epics }) {
             <thead>
               <tr className="bg-surface-container-lowest">
                 {[
-                  { label: 'ÉPICA',     cls: '' },
-                  { label: 'PROYECTO',  cls: '' },
-                  { label: 'ESTADO',    cls: '' },
-                  { label: 'ASSIGNEE',  cls: 'hidden md:table-cell' },
-                  { label: 'LEAD TIME', cls: 'hidden sm:table-cell' },
-                  { label: 'VENCE',     cls: 'hidden md:table-cell' },
+                  { label: 'ÉPICA',              cls: '' },
+                  { label: 'ESTADO',             cls: '' },
+                  { label: 'ASSIGNEE',           cls: 'hidden md:table-cell' },
+                  { label: 'LEAD TIME',          cls: 'hidden sm:table-cell' },
+                  { label: 'FECHA PASE A PRD',   cls: 'hidden md:table-cell' },
                 ].map(({ label, cls }) => (
                   <th key={label} className={`px-6 py-4 text-label-caps text-secondary ${cls}`}>{label}</th>
                 ))}
@@ -245,16 +253,8 @@ function InitiativesTable({ epics }) {
                         <span className="text-body-base font-bold text-primary">{epic.epic_name}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-body-base text-secondary">{epic.project_key}</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded text-[10px] font-bold
-                        ${epic.status === 'Done'
-                          ? 'bg-green-100 text-green-700'
-                          : epic.status === 'In Progress'
-                          ? 'bg-primary-container text-on-primary'
-                          : 'bg-surface-container text-on-surface-variant'}`}>
-                        {epic.status || '—'}
-                      </span>
+                    <td className="px-6 py-4 text-body-base text-on-surface-variant">
+                      {ESTADO_LABELS[epic.estado_normalizado] || epic.status || '—'}
                     </td>
                     <td className="hidden md:table-cell px-6 py-4 text-body-base text-on-surface-variant">{epic.assignee || '—'}</td>
                     <td className="hidden sm:table-cell px-6 py-4 text-body-base">
@@ -265,11 +265,7 @@ function InitiativesTable({ epics }) {
                       ) : '—'}
                     </td>
                     <td className="hidden md:table-cell px-6 py-4 text-body-base text-on-surface-variant">
-                      {epic.due_date ? (
-                        <span className={isOverdue ? 'text-error font-bold' : ''}>
-                          {dayjs(epic.due_date).format('DD MMM YYYY')}
-                        </span>
-                      ) : '—'}
+                      {epic.fecha_prd ? dayjs(epic.fecha_prd).format('DD MMM YYYY') : '—'}
                     </td>
                   </tr>
                 )
