@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { T } from '../../theme'
 
 const NAV_ITEMS = [
   { to: '/',        icon: 'dashboard',    label: 'Vista General' },
@@ -13,60 +14,93 @@ export default function Sidebar({ isOpen, onClose }) {
 
   return (
     <aside
-      className={`
-        h-screen w-64 fixed left-0 top-0 border-r border-outline-variant bg-surface flex flex-col py-1 shadow-sm z-50
-        transform transition-transform duration-300
-        md:translate-x-0
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}
+      className={`h-screen w-64 fixed left-0 top-0 flex flex-col py-1 z-50 transform transition-transform duration-300 md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+      style={{
+        background: T.surface,
+        borderRight: `1px solid ${T.border}`,
+      }}
     >
-      <div className="px-container-padding mb-8 mt-4 flex items-start justify-between">
+      {/* Logo */}
+      <div style={{ padding: '20px 24px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 className="text-headline-md font-bold text-primary">Insights Ejecutivos</h1>
-          <p className="text-body-base text-on-surface-variant">Suite de Salud Agile</p>
+          <h1 style={{ fontSize: 16, fontWeight: 700, color: T.textPri, lineHeight: 1.2 }}>Insights Ejecutivos</h1>
+          <p style={{ fontSize: 12, color: T.textMuted, marginTop: 4 }}>Suite de Salud Agile</p>
         </div>
         <button
           onClick={onClose}
-          className="md:hidden w-11 h-11 flex items-center justify-center text-on-surface-variant hover:bg-surface-container rounded-lg transition-colors"
+          className="md:hidden"
+          style={{ background: 'none', border: 'none', color: T.textSec, cursor: 'pointer', padding: 4 }}
           aria-label="Cerrar menú"
         >
           <span className="material-symbols-outlined">close</span>
         </button>
       </div>
 
-      <nav className="flex-grow space-y-1">
+      {/* Nav */}
+      <nav style={{ flexGrow: 1 }}>
         {NAV_ITEMS.map(({ to, icon, label }) => (
           <NavLink
             key={to}
             to={to}
             end={to === '/'}
             onClick={onClose}
-            className={({ isActive }) =>
-              `flex items-center px-container-padding py-3 transition-colors duration-200 ` +
-              (isActive
-                ? 'text-primary font-bold border-r-4 border-primary bg-secondary-container'
-                : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-high')
-            }
+            style={({ isActive }) => ({
+              display: 'flex',
+              alignItems: 'center',
+              padding: '11px 24px',
+              fontSize: 14,
+              fontWeight: isActive ? 600 : 400,
+              color: isActive ? T.blue : T.textSec,
+              background: isActive ? T.blueDim : 'transparent',
+              borderRight: isActive ? `3px solid ${T.blue}` : '3px solid transparent',
+              textDecoration: 'none',
+              transition: 'all 0.15s',
+            })}
+            onMouseEnter={(e) => { if (!e.currentTarget.dataset.active) e.currentTarget.style.color = T.textPri }}
+            onMouseLeave={(e) => { if (!e.currentTarget.dataset.active) e.currentTarget.style.color = T.textSec }}
           >
-            <span className="material-symbols-outlined mr-3">{icon}</span>
-            <span className="text-body-base">{label}</span>
+            <span className="material-symbols-outlined" style={{ fontSize: 20, marginRight: 12 }}>{icon}</span>
+            {label}
           </NavLink>
         ))}
       </nav>
 
-      <div className="px-container-padding mt-auto pb-6 space-y-2">
+      {/* Bottom actions */}
+      <div style={{ padding: '16px 24px 24px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {isAdmin && (
           <NavLink
             to="/admin"
             onClick={onClose}
-            className="block w-full py-2 text-center border border-outline text-on-surface-variant font-label-caps text-label-caps rounded-lg hover:bg-surface-container transition-colors"
+            style={{
+              display: 'block',
+              padding: '8px 0',
+              textAlign: 'center',
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: '0.05em',
+              color: T.textSec,
+              border: `1px solid ${T.border}`,
+              borderRadius: 8,
+              textDecoration: 'none',
+            }}
           >
             Panel Admin
           </NavLink>
         )}
         <button
           onClick={logout}
-          className="w-full py-2 bg-primary-container text-on-primary rounded-lg font-label-caps text-label-caps hover:opacity-90 transition-opacity"
+          style={{
+            width: '100%',
+            padding: '9px 0',
+            background: T.blueDim,
+            color: T.blue,
+            border: `1px solid ${T.blue}`,
+            borderRadius: 8,
+            fontSize: 12,
+            fontWeight: 600,
+            letterSpacing: '0.05em',
+            cursor: 'pointer',
+          }}
         >
           Cerrar Sesión
         </button>

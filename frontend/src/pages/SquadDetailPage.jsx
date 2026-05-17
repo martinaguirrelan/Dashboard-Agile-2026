@@ -1,27 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getEpics, getProjects } from '../api/epics'
+import { T } from '../theme'
 import dayjs from 'dayjs'
-
-// ── Theme tokens ──────────────────────────────────────────────────────────────
-
-const T = {
-  bg:         '#0b0d11',
-  surface:    '#14171c',
-  border:     '#1e2328',
-  borderHigh: '#2a303a',
-  textPri:    '#e2e8f0',
-  textSec:    '#8892a4',
-  textMuted:  '#556070',
-  blue:       '#3b82f6',
-  green:      '#22c55e',
-  red:        '#ef4444',
-  amber:      '#f59e0b',
-  blueBg:     '#1e3a5f',
-  greenBg:    '#14351f',
-  redBg:      '#3b1212',
-  amberBg:    '#3b2a0a',
-}
 
 // ── Semáforo helpers ──────────────────────────────────────────────────────────
 
@@ -34,9 +15,9 @@ function getSemaforo(epic) {
 }
 
 const SEMAFORO_STYLE = {
-  CRÍTICO: { color: T.red,   bg: T.redBg,   border: T.red },
-  ÓPTIMO:  { color: T.green, bg: T.greenBg, border: T.green },
-  ATRASO:  { color: T.amber, bg: T.amberBg, border: T.amber },
+  CRÍTICO: { color: T.red,   bg: T.redDim,   border: T.red },
+  ÓPTIMO:  { color: T.green, bg: T.greenDim, border: T.green },
+  ATRASO:  { color: T.amber, bg: T.amberDim, border: T.amber },
 }
 
 const ESTADO_LABELS = {

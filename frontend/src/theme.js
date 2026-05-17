@@ -1,0 +1,18 @@
+export const T = {
+  bg:         '#0b0d11',
+  surface:    '#14171c',
+  surfaceHi:  '#1a1f27',
+  border:     '#1e2328',
+  borderHi:   '#2a303a',
+  textPri:    '#e2e8f0',
+  textSec:    '#8892a4',
+  textMuted:  '#556070',
+  blue:       '#3b82f6',
+  blueDim:    '#1e3a5f',
+  green:      '#22c55e',
+  greenDim:   '#14351f',
+  red:        '#ef4444',
+  redDim:     '#3b1212',
+  amber:      '#f59e0b',
+  amberDim:   '#3b2a0a',
+}
