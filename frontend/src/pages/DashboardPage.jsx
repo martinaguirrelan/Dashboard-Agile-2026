@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { getEpics, getProjects } from '../api/epics'
 import { triggerSync } from '../api/sync'
 import { StatusPill, Delta, Sparkline, Progress, IconChevron, IconFilter, IconSearch, IconClose, IconArrow } from '../components/dashboard/DashUi'
+import { CANCELLATION_REASONS, CANCELLATION_IMPACTS } from '../components/dashboard/constants'
 import { LeadTimeChart, StatusDonut, VPLoadBars } from '../components/dashboard/DashCharts'
 import { buildVPs, buildSquads, adaptEpics, buildLeadTimeTrend } from '../components/dashboard/dataAdapter'
 import '../dashboard.css'
@@ -271,9 +272,61 @@ function InsightCallout({ initiatives, vps, squads }) {
   )
 }
 
+// ── InsightRow ────────────────────────────────────────────────────────────────
+
+function InsightRow({ initiatives, vps, squads, onShowCancelled }) {
+  const hasCancelled = initiatives.some((i) => i.status === 'cancelled')
+  const atRisk = initiatives.filter((i) => i.status === 'risk' || i.status === 'blocked')
+  if (!hasCancelled && atRisk.length === 0) return null
+  const cols = hasCancelled && atRisk.length > 0 ? '340px 1fr' : '1fr'
+  return (
+    <section className="row-insight" style={{ gridTemplateColumns: cols }}>
+      {hasCancelled && <CancelledCard initiatives={initiatives} onShowCancelled={onShowCancelled}/>}
+      {atRisk.length > 0 && <InsightCallout initiatives={initiatives} vps={vps} squads={squads}/>}
+    </section>
+  )
+}
+
+// ── CancelledCard ─────────────────────────────────────────────────────────────
+
+function CancelledCard({ initiatives, onShowCancelled }) {
+  const cancelled = initiatives.filter((i) => i.status === 'cancelled')
+  if (cancelled.length === 0) return null
+
+  const reasonCounts = {}
+  cancelled.forEach((i) => {
+    if (i.reason) reasonCounts[i.reason] = (reasonCounts[i.reason] || 0) + 1
+  })
+  const topReasons = Object.entries(reasonCounts).sort((a, b) => b[1] - a[1]).slice(0, 3)
+
+  return (
+    <div className="cancelled-card">
+      <div className="cancelled-head">
+        <div>
+          <span className="cancelled-tag mono">⊘ CANCELADAS</span>
+          <h4>{cancelled.length} iniciativa{cancelled.length !== 1 ? 's' : ''} cancelada{cancelled.length !== 1 ? 's' : ''} este período</h4>
+        </div>
+        <button className="btn-ghost dark btn-small" onClick={onShowCancelled}>
+          Ver análisis <IconArrow/>
+        </button>
+      </div>
+      {topReasons.length > 0 && (
+        <ul className="cancelled-list">
+          {topReasons.map(([reason, count]) => (
+            <li key={reason}>
+              <span className="cancelled-count">{count}</span>
+              <span>{CANCELLATION_REASONS[reason] || reason}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 // ── InitiativesTable ──────────────────────────────────────────────────────────
 
-function InitiativesTable({ initiatives, squads, vps, onSelect }) {
+function InitiativesTable({ initiatives, squads, vps, onSelect, tab, onTabChange }) {
   const [sort, setSort] = useState({ key: 'leadtime', dir: 'desc' })
   const [query, setQuery] = useState('')
 
@@ -283,16 +336,20 @@ function InitiativesTable({ initiatives, squads, vps, onSelect }) {
     return vps.find((v) => v.id === squad?.vp)
   }
 
+  const active    = initiatives.filter((i) => i.status !== 'cancelled')
+  const cancelled = initiatives.filter((i) => i.status === 'cancelled')
+  const source    = tab === 'cancelled' ? cancelled : active
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     let list = q
-      ? initiatives.filter((i) =>
+      ? source.filter((i) =>
           i.name.toLowerCase().includes(q) ||
           i.id.toLowerCase().includes(q) ||
           squadOf(i.squad)?.name.toLowerCase().includes(q) ||
           i.owner.toLowerCase().includes(q)
         )
-      : initiatives
+      : source
     list = [...list].sort((a, b) => {
       const va = a[sort.key], vb = b[sort.key]
       if (va === vb) return 0
@@ -300,7 +357,7 @@ function InitiativesTable({ initiatives, squads, vps, onSelect }) {
       return sort.dir === 'asc' ? cmp : -cmp
     })
     return list
-  }, [initiatives, query, sort, squads])
+  }, [source, query, sort, squads])
 
   const head = (key, label, num) => (
     <th onClick={() => setSort((s) => ({ key, dir: s.key === key && s.dir === 'desc' ? 'asc' : 'desc' }))}
@@ -310,12 +367,18 @@ function InitiativesTable({ initiatives, squads, vps, onSelect }) {
     </th>
   )
 
+  const progressTone = (i) =>
+    i.status === 'done'     ? 'ok'     :
+    i.status === 'risk'     ? 'warn'   :
+    i.status === 'blocked'  ? 'danger' :
+    i.status === 'progress' ? 'info'   : 'neutral'
+
   return (
     <section className="table-card">
       <div className="table-head">
         <div>
           <h3>Iniciativas <span className="muted mono">· {filtered.length}</span></h3>
-          <p className="muted">Ordenadas por lead time descendente · clic para abrir detalle</p>
+          <p className="muted">Clic para abrir detalle</p>
         </div>
         <div className="table-search">
           <IconSearch/>
@@ -323,80 +386,144 @@ function InitiativesTable({ initiatives, squads, vps, onSelect }) {
                  value={query} onChange={(e) => setQuery(e.target.value)}/>
         </div>
       </div>
-      <div className="table-scroll">
-        <table className="initiatives-table">
-          <thead>
-            <tr>
-              {head('id',       'ID',        false)}
-              {head('name',     'Iniciativa', false)}
-              <th>Estado</th>
-              {head('leadtime', 'Lead time',  true)}
-              <th>Squad</th>
-              <th>VP</th>
-              <th>Avance</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((i) => (
-              <tr key={i.id} onClick={() => onSelect(i)}>
-                <td className="mono muted">{i.id}</td>
-                <td className="cell-name">
-                  <strong>{i.name}</strong>
-                  <span className="muted">{i.owner}</span>
-                </td>
-                <td><StatusPill status={i.status}/></td>
-                <td className="num mono">{i.leadtime > 0 ? `${i.leadtime}d` : '—'}</td>
-                <td>
-                  <Link
-                    to={`/squad/${i.squad.toUpperCase()}`}
-                    style={{ color: 'var(--ink)', textDecoration: 'none', fontWeight: 500 }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {squadOf(i.squad)?.name || i.squad}
-                  </Link>
-                </td>
-                <td className="muted">{vpOf(i.squad)?.short}</td>
-                <td className="cell-progress">
-                  <Progress value={i.progress} tone={
-                    i.status === 'done'    ? 'ok'      :
-                    i.status === 'risk'    ? 'warn'    :
-                    i.status === 'blocked' ? 'danger'  :
-                    i.status === 'progress'? 'info'    : 'neutral'
-                  }/>
-                </td>
-              </tr>
-            ))}
-            {filtered.length === 0 && (
-              <tr><td colSpan="7" className="empty">Sin iniciativas para los filtros seleccionados.</td></tr>
-            )}
-          </tbody>
-        </table>
 
-        {/* Mobile cards */}
-        <div className="table-cards">
-          {filtered.map((i) => (
-            <button key={i.id} className="m-card" onClick={() => onSelect(i)}>
-              <div className="m-card-r1">
-                <span className="mono muted">{i.id}</span>
-                <StatusPill status={i.status}/>
-              </div>
-              <strong>{i.name}</strong>
-              <div className="m-card-meta">
-                <span>{squadOf(i.squad)?.name}</span>
-                <span className="dot-sep">·</span>
-                <span className="muted">{vpOf(i.squad)?.short}</span>
-              </div>
-              <div className="m-card-foot">
-                <span className="mono"><em>Lead time</em> {i.leadtime > 0 ? `${i.leadtime}d` : '—'}</span>
-              </div>
-              <Progress value={i.progress} tone={
-                i.status === 'done' ? 'ok' : i.status === 'risk' ? 'warn' :
-                i.status === 'blocked' ? 'danger' : i.status === 'progress' ? 'info' : 'neutral'
-              }/>
-            </button>
-          ))}
-          {filtered.length === 0 && <div className="empty">Sin iniciativas para los filtros seleccionados.</div>}
+      {cancelled.length > 0 && (
+        <div className="table-tabs">
+          <button className={`table-tab${tab !== 'cancelled' ? ' active' : ''}`}
+                  onClick={() => onTabChange('active')}>
+            Activas <em>{active.length}</em>
+          </button>
+          <button className={`table-tab${tab === 'cancelled' ? ' active' : ''}`}
+                  onClick={() => onTabChange('cancelled')}>
+            Canceladas <em>{cancelled.length}</em>
+          </button>
         </div>
+      )}
+
+      <div className="table-scroll">
+        {tab !== 'cancelled' ? (
+          <>
+            <table className="initiatives-table">
+              <thead>
+                <tr>
+                  {head('id',       'ID',        false)}
+                  {head('name',     'Iniciativa', false)}
+                  <th>Estado</th>
+                  {head('leadtime', 'Lead time',  true)}
+                  <th>Squad</th>
+                  <th>VP</th>
+                  <th>Avance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((i) => (
+                  <tr key={i.id} onClick={() => onSelect(i)}>
+                    <td className="mono muted">{i.id}</td>
+                    <td className="cell-name">
+                      <strong>{i.name}</strong>
+                      <span className="muted">{i.owner}</span>
+                    </td>
+                    <td><StatusPill status={i.status}/></td>
+                    <td className="num mono">{i.leadtime > 0 ? `${i.leadtime}d` : '—'}</td>
+                    <td>
+                      <Link
+                        to={`/squad/${i.squad.toUpperCase()}`}
+                        style={{ color: 'var(--ink)', textDecoration: 'none', fontWeight: 500 }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {squadOf(i.squad)?.name || i.squad}
+                      </Link>
+                    </td>
+                    <td className="muted">{vpOf(i.squad)?.short}</td>
+                    <td className="cell-progress"><Progress value={i.progress} tone={progressTone(i)}/></td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr><td colSpan="7" className="empty">Sin iniciativas para los filtros seleccionados.</td></tr>
+                )}
+              </tbody>
+            </table>
+            <div className="table-cards">
+              {filtered.map((i) => (
+                <button key={i.id} className="m-card" onClick={() => onSelect(i)}>
+                  <div className="m-card-r1">
+                    <span className="mono muted">{i.id}</span>
+                    <StatusPill status={i.status}/>
+                  </div>
+                  <strong>{i.name}</strong>
+                  <div className="m-card-meta">
+                    <span>{squadOf(i.squad)?.name}</span>
+                    <span className="dot-sep">·</span>
+                    <span className="muted">{vpOf(i.squad)?.short}</span>
+                  </div>
+                  <div className="m-card-foot">
+                    <span className="mono"><em>Lead time</em> {i.leadtime > 0 ? `${i.leadtime}d` : '—'}</span>
+                  </div>
+                  <Progress value={i.progress} tone={progressTone(i)}/>
+                </button>
+              ))}
+              {filtered.length === 0 && <div className="empty">Sin iniciativas para los filtros seleccionados.</div>}
+            </div>
+          </>
+        ) : (
+          <>
+            <table className="initiatives-table">
+              <thead>
+                <tr>
+                  {head('id',           'ID',          false)}
+                  {head('name',         'Iniciativa',  false)}
+                  {head('cancelled_at', 'Cancelada',   false)}
+                  <th>Razón</th>
+                  <th>Impacto</th>
+                  <th>Squad</th>
+                  <th>VP</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((i) => (
+                  <tr key={i.id} onClick={() => onSelect(i)}>
+                    <td className="mono muted">{i.id}</td>
+                    <td className="cell-name">
+                      <strong>{i.name}</strong>
+                      <span className="muted">{i.owner}</span>
+                    </td>
+                    <td className="mono muted">
+                      {i.cancelled_at ? new Date(i.cancelled_at).toLocaleDateString('es', { day:'2-digit', month:'short', year:'numeric' }) : '—'}
+                    </td>
+                    <td>{CANCELLATION_REASONS[i.reason] || (i.reason || '—')}</td>
+                    <td className="muted">{CANCELLATION_IMPACTS[i.impact] || (i.impact || '—')}</td>
+                    <td>{squadOf(i.squad)?.name || i.squad}</td>
+                    <td className="muted">{vpOf(i.squad)?.short}</td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr><td colSpan="7" className="empty">Sin iniciativas canceladas en este período.</td></tr>
+                )}
+              </tbody>
+            </table>
+            <div className="table-cards">
+              {filtered.map((i) => (
+                <button key={i.id} className="m-card" onClick={() => onSelect(i)}>
+                  <div className="m-card-r1">
+                    <span className="mono muted">{i.id}</span>
+                    <StatusPill status="cancelled"/>
+                  </div>
+                  <strong>{i.name}</strong>
+                  <div className="m-card-meta">
+                    <span>{CANCELLATION_REASONS[i.reason] || '—'}</span>
+                  </div>
+                  <div className="m-card-foot">
+                    <span className="mono muted">
+                      {i.cancelled_at ? new Date(i.cancelled_at).toLocaleDateString('es', { day:'2-digit', month:'short' }) : '—'}
+                    </span>
+                    <span>{CANCELLATION_IMPACTS[i.impact] || '—'}</span>
+                  </div>
+                </button>
+              ))}
+              {filtered.length === 0 && <div className="empty">Sin iniciativas canceladas en este período.</div>}
+            </div>
+          </>
+        )}
       </div>
     </section>
   )
@@ -436,16 +563,42 @@ function DetailDrawer({ item, onClose, squads, vps }) {
           {item.fecha_prd && <div><dt>Fecha PRD</dt><dd className="mono">{item.fecha_prd}</dd></div>}
           {item.estado_iniciativa && <div><dt>Estado iniciativa</dt><dd>{item.estado_iniciativa}</dd></div>}
         </dl>
-        <div className="drawer-timeline">
-          <h5 className="mono">CICLO DE FLUJO</h5>
-          <ol>
-            <li className="done"><span/>Discovery</li>
-            <li className={item.progress > 20 ? 'done' : ''}><span/>Refinamiento</li>
-            <li className={item.progress > 40 ? 'done' : item.progress > 20 ? 'active' : ''}><span/>Build</li>
-            <li className={item.progress > 80 ? 'done' : item.progress > 50 ? 'active' : ''}><span/>UAT</li>
-            <li className={item.progress >= 100 ? 'done' : ''}><span/>Producción</li>
-          </ol>
-        </div>
+        {item.status === 'cancelled' ? (
+          <div className="cancelled-card" style={{ margin: '0' }}>
+            <div>
+              <span className="cancelled-tag mono">⊘ CANCELACIÓN</span>
+            </div>
+            <ul className="cancelled-list">
+              <li>
+                <span className="cancelled-count" style={{ minWidth: 'auto', padding: '0 6px' }}>Fecha</span>
+                <span className="mono">
+                  {item.cancelled_at
+                    ? new Date(item.cancelled_at).toLocaleDateString('es', { day:'2-digit', month:'long', year:'numeric' })
+                    : '—'}
+                </span>
+              </li>
+              <li>
+                <span className="cancelled-count" style={{ minWidth: 'auto', padding: '0 6px' }}>Razón</span>
+                <span>{CANCELLATION_REASONS[item.reason] || item.reason || '—'}</span>
+              </li>
+              <li>
+                <span className="cancelled-count" style={{ minWidth: 'auto', padding: '0 6px' }}>Impacto</span>
+                <span>{CANCELLATION_IMPACTS[item.impact] || item.impact || '—'}</span>
+              </li>
+            </ul>
+          </div>
+        ) : (
+          <div className="drawer-timeline">
+            <h5 className="mono">CICLO DE FLUJO</h5>
+            <ol>
+              <li className="done"><span/>Discovery</li>
+              <li className={item.progress > 20 ? 'done' : ''}><span/>Refinamiento</li>
+              <li className={item.progress > 40 ? 'done' : item.progress > 20 ? 'active' : ''}><span/>Build</li>
+              <li className={item.progress > 80 ? 'done' : item.progress > 50 ? 'active' : ''}><span/>UAT</li>
+              <li className={item.progress >= 100 ? 'done' : ''}><span/>Producción</li>
+            </ol>
+          </div>
+        )}
         <footer>
           <Link to={`/squad/${(item.squad || '').toUpperCase()}`} className="btn-primary" onClick={onClose}>
             Abrir detalle del squad <IconArrow/>
@@ -596,6 +749,7 @@ export default function DashboardPage() {
   const [loading, setLoading]       = useState(true)
   const [syncing, setSyncing]       = useState(false)
   const [lastUpdate, setLastUpdate] = useState(null)
+  const [tableTab, setTableTab]     = useState('active')
 
   useEffect(() => {
     Promise.all([
@@ -695,9 +849,7 @@ export default function DashboardPage() {
         </section>
 
         {t.showInsight && (
-          <section className="row-insight">
-            <InsightCallout initiatives={filtered} vps={vps} squads={squads}/>
-          </section>
+          <InsightRow initiatives={filtered} vps={vps} squads={squads} onShowCancelled={() => setTableTab('cancelled')}/>
         )}
 
         <InitiativesTable
@@ -705,6 +857,8 @@ export default function DashboardPage() {
           squads={squads}
           vps={vps}
           onSelect={setSelected}
+          tab={tableTab}
+          onTabChange={setTableTab}
         />
 
         <DetailDrawer

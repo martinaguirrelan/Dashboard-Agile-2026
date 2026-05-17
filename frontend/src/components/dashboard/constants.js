@@ -5,7 +5,23 @@ export const STATUSES = [
   { id: 'risk',      label: 'En Riesgo',   tone: 'warn'    },
   { id: 'blocked',   label: 'Bloqueada',   tone: 'danger'  },
   { id: 'done',      label: 'Completada',  tone: 'ok'      },
+  { id: 'cancelled', label: 'Cancelada',   tone: 'neutral' },
 ]
+
+export const CANCELLATION_REASONS = {
+  scope_change:    'Cambio de scope',
+  budget_cut:      'Corte presupuestario',
+  strategic_pivot: 'Pivot estratégico',
+  blocker:         'Bloqueadores no resueltos',
+  tech_debt:       'Redestinada a debt técnico',
+}
+
+export const CANCELLATION_IMPACTS = {
+  defer:   'Pospuesta a próximo trimestre',
+  cancel:  'Cancelada permanentemente',
+  quarter: 'Impacto: este trimestre',
+  scope:   'Scope reducido en fase 2',
+}
 
 export const STATUS_TONE = {
   ok:      { fg: '#1f6b3a', bg: 'rgba(31,107,58,.10)',  dot: '#1f6b3a' },
