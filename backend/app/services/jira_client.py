@@ -47,7 +47,7 @@ def _parse_date(value: Any) -> datetime | None:
         return None
     for fmt in _DATE_FORMATS:
         try:
-            dt = datetime.strptime(value[: len(fmt) + 5], fmt)
+            dt = datetime.strptime(value, fmt)
             if dt.tzinfo is None:
                 dt = dt.replace(tzinfo=timezone.utc)
             return dt
