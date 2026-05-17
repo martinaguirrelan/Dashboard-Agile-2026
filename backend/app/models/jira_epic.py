@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, DateTime, Integer, Numeric, Text, ForeignKey
+from sqlalchemy import Column, String, Boolean, Date, DateTime, Integer, Numeric, Text, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from ..database import Base
@@ -38,8 +38,8 @@ class JiraEpic(Base):
     estimacion_inicial = Column(String, nullable=True)
     estimacion_final   = Column(String, nullable=True)
     estado_iniciativa  = Column(String, nullable=True)
-    fecha_done         = Column(DateTime(timezone=True), nullable=True)
-    fecha_prd          = Column(DateTime(timezone=True), nullable=True)
+    fecha_done         = Column(Date, nullable=True)
+    fecha_prd          = Column(Date, nullable=True)
     sprint_fin         = Column(String, nullable=True)
     created_at       = Column(DateTime(timezone=True), server_default=func.now())
     updated_at       = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
