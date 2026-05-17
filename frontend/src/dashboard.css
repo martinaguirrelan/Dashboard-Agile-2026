@@ -138,7 +138,7 @@ body[data-density="comfy"]   .app { gap: 32px; padding-top: 40px; }
 /* ── KPI strip ──────────────────────────────────────────────────────────── */
 .kpis {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 14px;
 }
 .kpi {
@@ -519,7 +519,7 @@ body[data-density="comfy"] .initiatives-table td { padding: 16px 18px; }
 }
 @media (max-width: 1100px) {
   .row-mid { grid-template-columns: 1fr; }
-  .kpis { grid-template-columns: repeat(2, 1fr); }
+  .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
   .app { padding: 18px 14px 80px; gap: 18px; }
