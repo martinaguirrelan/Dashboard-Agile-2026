@@ -57,7 +57,7 @@ function FilterBar({ filters, vps, projects, onChange, onClear, onSync, syncing,
   const hasFilters = Object.values(filters).some(Boolean)
 
   return (
-    <div className="bg-white border-b border-outline-variant px-4 sm:px-6 py-2.5 flex flex-wrap items-center gap-2 sticky top-0 z-10 shadow-sm">
+    <div className="bg-white border-b border-outline-variant px-4 sm:px-6 py-3 flex flex-wrap items-center gap-4 sticky top-0 z-10 shadow-sm">
 
       {/* Icon */}
       <span className="material-symbols-outlined text-secondary text-base hidden sm:block">filter_alt</span>
@@ -332,7 +332,7 @@ export default function DashboardPage() {
   const hasFilter = Object.values(filters).some(Boolean)
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 bg-white">
 
       {/* ① Filter Bar — break out of main padding, sticky top */}
       <div className="-mx-4 -mt-4 md:-mx-6 md:-mt-6">

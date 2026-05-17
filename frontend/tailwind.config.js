@@ -60,7 +60,7 @@ export default {
         full:    "0.75rem",
       },
       fontFamily: {
-        sans: ["Inter", "sans-serif"],
+        sans: ["Fira Sans", "sans-serif"],
       },
       fontSize: {
         "data-label":   ["11px", { lineHeight: "14px",  fontWeight: "500" }],
