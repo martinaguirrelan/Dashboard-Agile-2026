@@ -284,3 +284,105 @@ def fetch_epics_for_project(project_key: str) -> list[dict[str, Any]]:
     al esquema de jira_epics. Wrapper sincrónico.
     """
     return asyncio.run(fetch_epics_for_project_async(project_key))
+
+
+async def fetch_epics_since_async(project_key: str, since_timestamp: str) -> list[dict[str, Any]]:
+    """
+    Consulta async épicas modificadas desde una fecha (sync diferencial).
+    Formato de since_timestamp: ISO 8601 con timezone, ej: "2026-05-22T16:50:00+00:00"
+    """
+    jql = f'project = "{project_key}" AND issuetype = Epic AND updated >= "{since_timestamp}" ORDER BY updated DESC'
+    url = f"{settings.jira_base_url}/rest/api/3/search/jql"
+    fields = [
+        "summary",
+        "description",
+        "duedate",
+        "status",
+        "assignee",
+        "priority",
+        "labels",
+        settings.jira_field_start_date,
+        settings.jira_field_quarter,
+        settings.jira_field_sprint_inicio,
+        settings.jira_field_estimacion_ini,
+        settings.jira_field_estimacion_fin,
+        settings.jira_field_estado_iniciativa,
+        settings.jira_field_fecha_done,
+        settings.jira_field_fecha_prd,
+        settings.jira_field_sprint_fin,
+    ]
+
+    epics: list[dict] = []
+    next_page_token: str | None = None
+
+    async with httpx.AsyncClient(headers=_headers(), timeout=30) as client:
+        while True:
+            body: dict[str, Any] = {
+                "jql": jql,
+                "maxResults": 100,
+                "fields": fields,
+            }
+            if next_page_token:
+                body["nextPageToken"] = next_page_token
+
+            try:
+                resp = await client.post(url, json=body)
+                resp.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                status_code = exc.response.status_code
+                if status_code in (400, 404):
+                    logger.warning(
+                        "⚠️  Proyecto '%s' no encontrado en Jira o JQL inválido. (%s)",
+                        project_key, exc.response.text[:200],
+                    )
+                    return []
+                raise
+
+            data: dict = resp.json()
+            issues: list = data.get("issues", [])
+            if not issues:
+                break
+
+            for issue in issues:
+                f = issue.get("fields", {})
+                start_dt = _parse_date(f.get(settings.jira_field_start_date))
+                due_dt   = _parse_date(f.get("duedate"))
+                year, quarter = _parse_custom_quarter(f.get(settings.jira_field_quarter))
+                if year is None:
+                    year, quarter = _parse_label(f.get("labels"))
+
+                epics.append({
+                    "jira_issue_id":    issue["key"],
+                    "epic_name":        f.get("summary") or "Sin nombre",
+                    "description":      _extract_text(f.get("description")),
+                    "start_date":       start_dt,
+                    "due_date":         due_dt,
+                    "lead_time_days":   _lead_time_days(start_dt, due_dt),
+                    "status":           (f.get("status") or {}).get("name"),
+                    "estado_normalizado": _normalize_status((f.get("status") or {}).get("name")),
+                    "assignee":         (f.get("assignee") or {}).get("displayName"),
+                    "priority_status":  (f.get("priority") or {}).get("name"),
+                    "project_key":      project_key,
+                    "year":             year,
+                    "quarter":          quarter,
+                    "priority_quarter":  f"{quarter} {year}" if quarter and year else None,
+                    "sprint_inicio":     (f.get(settings.jira_field_sprint_inicio) or {}).get("value"),
+                    "estimacion_inicial": (f.get(settings.jira_field_estimacion_ini) or {}).get("value"),
+                    "estimacion_final":   (f.get(settings.jira_field_estimacion_fin) or {}).get("value"),
+                    "estado_iniciativa":  (f.get(settings.jira_field_estado_iniciativa) or {}).get("value"),
+                    "fecha_done":         (dt := _parse_date(f.get(settings.jira_field_fecha_done))) and dt.date() or None,
+                    "fecha_prd":          (dt := _parse_date(f.get(settings.jira_field_fecha_prd))) and dt.date() or None,
+                    "sprint_fin":         (f.get(settings.jira_field_sprint_fin) or {}).get("value"),
+                })
+
+            next_page_token = data.get("nextPageToken")
+            if not next_page_token or len(issues) < 100:
+                break
+
+    logger.info("  ✅ %s → %d épicas (desde %s)", project_key, len(epics), since_timestamp)
+    return epics
+
+
+def fetch_epics_since(project_key: str, since_timestamp: str) -> list[dict[str, Any]]:
+    """Wrapper sincrónico para fetch_epics_since_async."""
+    return asyncio.run(fetch_epics_since_async(project_key, since_timestamp))

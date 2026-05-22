@@ -8,12 +8,13 @@ from ..database import Base
 class ConfigProject(Base):
     __tablename__ = "config_projects"
 
-    id           = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    project_key  = Column(String, nullable=False, unique=True, index=True)
-    project_name = Column(String, nullable=True)
-    vp           = Column(String, nullable=True)
-    is_active    = Column(Boolean, default=True)
-    created_at   = Column(DateTime(timezone=True), server_default=func.now())
+    id                   = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_key          = Column(String, nullable=False, unique=True, index=True)
+    project_name         = Column(String, nullable=True)
+    vp                   = Column(String, nullable=True)
+    is_active            = Column(Boolean, default=True)
+    last_sync_timestamp  = Column(DateTime(timezone=True), nullable=True)
+    created_at           = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class JiraEpic(Base):

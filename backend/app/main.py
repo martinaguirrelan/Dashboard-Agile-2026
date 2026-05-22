@@ -49,11 +49,15 @@ def _start_scheduler() -> None:
     except Exception as exc:
         logger.error("❌ Error al crear tablas en DB: %s", exc)
 
-    from .services.sync_service import run_sync
+    from .services.sync_service import run_sync, run_full_sync
+    
     interval = settings.polling_interval_min
-    _scheduler.add_job(run_sync, "interval", minutes=interval, id="jira_sync", replace_existing=True)
+    _scheduler.add_job(run_sync, "interval", minutes=interval, id="jira_sync_diff", replace_existing=True)
+    _scheduler.add_job(run_full_sync, "interval", hours=24, id="jira_sync_full", replace_existing=True)
     _scheduler.start()
-    logger.info("⏱️  Scheduler iniciado — sync cada %d min.", interval)
+    logger.info("⏱️  Scheduler iniciado:")
+    logger.info("   - Sync diferencial cada %d min", interval)
+    logger.info("   - Full sync cada 24h (limpieza de orphaned records)")
 
 
 @app.on_event("shutdown")
