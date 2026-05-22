@@ -3,6 +3,7 @@ US-1 + US-3: Jira Cloud client con Basic Auth y mapeo de épicas.
 """
 from __future__ import annotations
 
+import asyncio
 import base64
 import logging
 import re
@@ -180,13 +181,12 @@ def _parse_sprint(sprints: Any, last: bool = False) -> str | None:
 
 # ── Fetcher ───────────────────────────────────────────────────────────────────
 
-def fetch_epics_for_project(project_key: str) -> list[dict[str, Any]]:
+async def fetch_epics_for_project_async(project_key: str) -> list[dict[str, Any]]:
     """
-    Consulta Jira JQL y retorna todas las Epics del proyecto mapeadas
-    al esquema de jira_epics.
+    Consulta async Jira JQL y retorna todas las Epics del proyecto.
+    Versión parallelizable para sync.
     """
     jql = f'project = "{project_key}" AND issuetype = Epic ORDER BY created DESC'
-    # Jira Cloud deprecó GET /search — ahora usa POST /search/jql
     url = f"{settings.jira_base_url}/rest/api/3/search/jql"
     fields = [
         "summary",
@@ -210,7 +210,7 @@ def fetch_epics_for_project(project_key: str) -> list[dict[str, Any]]:
     epics: list[dict] = []
     next_page_token: str | None = None
 
-    with httpx.Client(headers=_headers(), timeout=30) as client:
+    async with httpx.AsyncClient(headers=_headers(), timeout=30) as client:
         while True:
             body: dict[str, Any] = {
                 "jql": jql,
@@ -221,7 +221,7 @@ def fetch_epics_for_project(project_key: str) -> list[dict[str, Any]]:
                 body["nextPageToken"] = next_page_token
 
             try:
-                resp = client.post(url, json=body)
+                resp = await client.post(url, json=body)
                 resp.raise_for_status()
             except httpx.HTTPStatusError as exc:
                 status_code = exc.response.status_code
@@ -276,3 +276,11 @@ def fetch_epics_for_project(project_key: str) -> list[dict[str, Any]]:
 
     logger.info("  ✅ %s → %d épicas obtenidas.", project_key, len(epics))
     return epics
+
+
+def fetch_epics_for_project(project_key: str) -> list[dict[str, Any]]:
+    """
+    Consulta Jira JQL y retorna todas las Epics del proyecto mapeadas
+    al esquema de jira_epics. Wrapper sincrónico.
+    """
+    return asyncio.run(fetch_epics_for_project_async(project_key))
