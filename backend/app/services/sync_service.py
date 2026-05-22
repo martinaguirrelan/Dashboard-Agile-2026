@@ -119,6 +119,41 @@ async def _fetch_all_projects_async(
     return project_epics
 
 
+async def _fetch_differential_async(
+    keys: list[str],
+    since_map: dict[str, str]
+) -> dict[str, list[dict]]:
+    """Fetch diferencial para algunos proyectos y full para otros."""
+    tasks_diff = [
+        fetch_epics_since_async(key, since_map[key])
+        for key in keys if key in since_map
+    ]
+    tasks_full = [
+        fetch_epics_for_project_async(key)
+        for key in keys if key not in since_map
+    ]
+    
+    results = []
+    if tasks_diff:
+        results.extend(await asyncio.gather(*tasks_diff, return_exceptions=True))
+    if tasks_full:
+        results.extend(await asyncio.gather(*tasks_full, return_exceptions=True))
+
+    project_epics: dict[str, list[dict]] = {}
+    diff_keys = [k for k in keys if k in since_map]
+    full_keys = [k for k in keys if k not in since_map]
+    all_keys = diff_keys + full_keys
+    
+    for key, result in zip(all_keys, results):
+        if isinstance(result, Exception):
+            logger.error("  ✗ Error fetching %s: %s", key, result)
+            project_epics[key] = []
+        else:
+            project_epics[key] = result
+    
+    return project_epics
+
+
 def run_sync(force_full_sync: bool = False) -> dict:
     """
     Sincroniza épicas de Jira → Supabase.
@@ -157,32 +192,7 @@ def run_sync(force_full_sync: bool = False) -> dict:
                     logger.info("  ℹ️  %s — primera sincronización (full)", key)
 
             # Fetch diferencial para los que tienen timestamp, full para los que no
-            tasks_diff = [
-                fetch_epics_since_async(key, since_map[key])
-                for key in keys if key in since_map
-            ]
-            tasks_full = [
-                fetch_epics_for_project_async(key)
-                for key in keys if key not in since_map
-            ]
-            
-            results = []
-            if tasks_diff:
-                results.extend(await asyncio.gather(*tasks_diff, return_exceptions=True))
-            if tasks_full:
-                results.extend(await asyncio.gather(*tasks_full, return_exceptions=True))
-
-            project_epics: dict[str, list[dict]] = {}
-            diff_keys = [k for k in keys if k in since_map]
-            full_keys = [k for k in keys if k not in since_map]
-            all_keys = diff_keys + full_keys
-            
-            for key, result in zip(all_keys, results):
-                if isinstance(result, Exception):
-                    logger.error("  ✗ Error fetching %s: %s", key, result)
-                    project_epics[key] = []
-                else:
-                    project_epics[key] = result
+            project_epics = asyncio.run(_fetch_differential_async(keys, since_map))
 
         # Upsert resultados
         for key in keys:
