@@ -290,8 +290,12 @@ async def fetch_epics_since_async(project_key: str, since_timestamp: str) -> lis
     """
     Consulta async épicas modificadas desde una fecha (sync diferencial).
     Formato de since_timestamp: ISO 8601 con timezone, ej: "2026-05-22T16:50:00+00:00"
+    Convierte a formato que Jira entiende: "YYYY-MM-DD HH:mm"
     """
-    jql = f'project = "{project_key}" AND issuetype = Epic AND updated >= "{since_timestamp}" ORDER BY updated DESC'
+    # Convierte ISO 8601 a formato Jira: "2026-05-22 21:35:42"
+    dt = datetime.fromisoformat(since_timestamp.replace('Z', '+00:00'))
+    jira_timestamp = dt.strftime("%Y-%m-%d %H:%M")
+    jql = f'project = "{project_key}" AND issuetype = Epic AND updated >= "{jira_timestamp}" ORDER BY updated DESC'
     url = f"{settings.jira_base_url}/rest/api/3/search/jql"
     fields = [
         "summary",
