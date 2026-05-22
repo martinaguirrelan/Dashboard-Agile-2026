@@ -20,6 +20,12 @@ def trigger_sync():
     return run_sync()
 
 
+@router.post("/full", response_model=SyncResultOut)
+def trigger_full_sync():
+    """Dispara un full sync forzando traer todos los épicos."""
+    return run_sync(force_full_sync=True)
+
+
 @router.get("/debug-fields/{project_key}")
 def debug_jira_fields(project_key: str):
     """Devuelve el raw de los custom fields de sprint/estimación del primer epic del proyecto."""
