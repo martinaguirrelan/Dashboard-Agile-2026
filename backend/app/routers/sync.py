@@ -14,15 +14,15 @@ import httpx
 router = APIRouter(prefix="/sync", tags=["sync"])
 
 
-@router.post("/run", response_model=SyncResultOut)  # Temporarily disabled auth for testing
+@router.post("/run", response_model=SyncResultOut, dependencies=[Depends(require_admin)])
 def trigger_sync():
-    """Dispara la sincronización on-demand."""
+    """Dispara la sincronización on-demand (requiere token admin)."""
     return run_sync()
 
 
-@router.post("/full", response_model=SyncResultOut)
+@router.post("/full", response_model=SyncResultOut, dependencies=[Depends(require_admin)])
 def trigger_full_sync():
-    """Dispara un full sync forzando traer todos los épicos."""
+    """Dispara un full sync forzando traer todos los épicos (requiere token admin)."""
     return run_sync(force_full_sync=True)
 
 
