@@ -296,7 +296,8 @@ async def fetch_epics_since_async(project_key: str, since_timestamp: str) -> lis
     # Convierte ISO 8601 a formato Jira: "2026-05-22 21:35:42"
     dt = datetime.fromisoformat(since_timestamp.replace('Z', '+00:00'))
     jira_timestamp = dt.strftime("%Y-%m-%d %H:%M")
-    jql = f'project = "{project_key}" AND issuetype = Epic AND (created >= "{jira_timestamp}" OR updated >= "{jira_timestamp}") ORDER BY updated DESC'
+    # Nota: Jira JQL NO acepta comillas alrededor de timestamps
+    jql = f'project = "{project_key}" AND issuetype = Epic AND (created >= {jira_timestamp} OR updated >= {jira_timestamp}) ORDER BY updated DESC'
     url = f"{settings.jira_base_url}/rest/api/3/search/jql"
     fields = [
         "summary",
