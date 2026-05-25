@@ -86,30 +86,26 @@ def sync_status(db: Session = Depends(get_db)):
 @router.get("/logs")
 def get_sync_logs(days: int = Query(7, ge=1, le=90), db: Session = Depends(get_db)):
     """Últimos N días de histórico de sincronización (sin autenticación)."""
-    try:
-        since = datetime.now(timezone.utc) - timedelta(days=days)
-        logs = db.query(SyncLog).filter(SyncLog.created_at >= since).all()
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    logs = db.query(SyncLog).filter(SyncLog.created_at >= since).order_by(SyncLog.created_at.desc()).all()
 
-        result = []
-        for log in logs:
-            log_dict = {
-                "id": str(log.id),
-                "sync_type": log.sync_type,
-                "started_at": log.started_at.isoformat() if log.started_at else None,
-                "ended_at": log.ended_at.isoformat() if log.ended_at else None,
-                "duration_seconds": log.duration_seconds,
-                "total_upserted": log.total_upserted,
-                "total_errors": log.total_errors,
-                "status": log.status,
-                "error_message": log.error_message,
-                "projects_detail": log.projects_detail,
-                "created_at": log.created_at.isoformat() if log.created_at else None,
-            }
-            result.append(log_dict)
-        return result
-    except Exception as e:
-        import traceback
-        return {"error": str(e), "traceback": traceback.format_exc()}
+    result = []
+    for log in logs:
+        log_dict = {
+            "id": str(log.id),
+            "sync_type": log.sync_type,
+            "started_at": log.started_at.isoformat() if log.started_at else None,
+            "ended_at": log.ended_at.isoformat() if log.ended_at else None,
+            "duration_seconds": log.duration_seconds,
+            "total_upserted": log.total_upserted,
+            "total_errors": log.total_errors,
+            "status": log.status,
+            "error_message": log.error_message,
+            "projects_detail": log.projects_detail,
+            "created_at": log.created_at.isoformat() if log.created_at else None,
+        }
+        result.append(log_dict)
+    return result
 
 
 @router.get("/summary")
