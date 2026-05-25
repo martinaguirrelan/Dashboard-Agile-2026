@@ -51,3 +51,34 @@ class SyncResultOut(BaseModel):
     total_upserted: int = 0
     total_errors: int = 0
     projects: list[dict] = []
+
+
+class SyncLogOut(BaseModel):
+    id: UUID
+    sync_type: str
+    started_at: datetime
+    ended_at: datetime | None
+    duration_seconds: float | None
+    total_upserted: int | None
+    total_errors: int | None
+    status: str | None
+    error_message: str | None
+    projects_detail: dict | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class SyncMetricOut(BaseModel):
+    id: UUID
+    date: date
+    sync_count: int
+    avg_duration_seconds: float | None
+    total_epics_upserted: int
+    total_errors: int
+    error_rate: float | None
+    fastest_sync_seconds: float | None
+    slowest_sync_seconds: float | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

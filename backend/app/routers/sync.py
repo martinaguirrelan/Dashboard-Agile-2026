@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
+from datetime import datetime, timezone, timedelta
 
 from ..config import settings
 from ..database import get_db
-from ..models.jira_epic import ConfigProject, JiraEpic
-from ..schemas.jira_epic import SyncResultOut
+from ..models.jira_epic import ConfigProject, JiraEpic, SyncLog, SyncMetric
+from ..schemas.jira_epic import SyncResultOut, SyncLogOut, SyncMetricOut
 from ..services.auth_service import require_admin
 from ..services.jira_client import _headers
 from ..services.sync_service import run_sync
@@ -80,3 +81,52 @@ def sync_status(db: Session = Depends(get_db)):
             for p in projects
         ],
     }
+
+
+@router.get("/logs", response_model=list[SyncLogOut])
+def get_sync_logs(days: int = Query(7, ge=1, le=90), db: Session = Depends(get_db)):
+    """Últimos N días de histórico de sincronización (sin autenticación)."""
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    logs = db.query(SyncLog).filter(SyncLog.created_at >= since).order_by(SyncLog.created_at.desc()).all()
+    return logs
+
+
+@router.get("/summary")
+def sync_summary(db: Session = Depends(get_db)):
+    """Resumen de últimas 24h de sincronización (métricas rápidas, sin autenticación)."""
+    since = datetime.now(timezone.utc) - timedelta(hours=24)
+    logs = db.query(SyncLog).filter(SyncLog.created_at >= since).all()
+
+    if not logs:
+        return {
+            "sync_count": 0,
+            "avg_duration_seconds": None,
+            "total_epics": 0,
+            "total_errors": 0,
+            "error_rate": 0,
+            "last_sync": None,
+        }
+
+    total_duration = sum(log.duration_seconds or 0 for log in logs)
+    total_upserted = sum(log.total_upserted or 0 for log in logs)
+    total_errors = sum(log.total_errors or 0 for log in logs)
+
+    avg_duration = total_duration / len(logs) if logs else None
+    error_rate = (total_errors / (total_upserted + total_errors) * 100) if (total_upserted + total_errors) > 0 else 0
+
+    return {
+        "sync_count": len(logs),
+        "avg_duration_seconds": round(avg_duration, 2) if avg_duration else None,
+        "total_epics": total_upserted,
+        "total_errors": total_errors,
+        "error_rate": round(error_rate, 2),
+        "last_sync": logs[0].created_at if logs else None,
+    }
+
+
+@router.get("/metrics", response_model=list[SyncMetricOut])
+def get_sync_metrics(days: int = Query(7, ge=1, le=90), db: Session = Depends(get_db)):
+    """Métricas diarias de últimos N días (sin autenticación)."""
+    since = (datetime.now(timezone.utc) - timedelta(days=days)).date()
+    metrics = db.query(SyncMetric).filter(SyncMetric.date >= since).order_by(SyncMetric.date.desc()).all()
+    return metrics

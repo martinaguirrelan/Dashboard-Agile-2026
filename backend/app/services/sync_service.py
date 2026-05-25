@@ -13,7 +13,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from ..database import SessionLocal
-from ..models.jira_epic import ConfigProject, JiraEpic
+from ..models.jira_epic import ConfigProject, JiraEpic, SyncLog, SyncMetric
 from .jira_client import fetch_epics_for_project_async, fetch_epics_since_async
 
 logger = logging.getLogger(__name__)
@@ -96,6 +96,54 @@ def _upsert_epics(db: Session, epics: list[dict]) -> tuple[int, int, list[str]]:
             errors += 1
     db.commit()
     return ok, errors, error_details
+
+
+def _save_sync_log(
+    db: Session,
+    sync_type: str,
+    started_at: datetime,
+    ended_at: datetime,
+    duration: float,
+    total_upserted: int,
+    total_errors: int,
+    projects_result: list[dict],
+    error_message: str | None = None,
+) -> None:
+    """Guarda registro de sincronización en sync_logs."""
+    status = "error" if error_message else ("partial" if total_errors > 0 else "success")
+    log = SyncLog(
+        sync_type=sync_type,
+        started_at=started_at,
+        ended_at=ended_at,
+        duration_seconds=round(duration, 2),
+        total_upserted=total_upserted,
+        total_errors=total_errors,
+        status=status,
+        error_message=error_message,
+        projects_detail=projects_result,
+    )
+    db.add(log)
+    db.commit()
+
+
+def _check_sync_alerts(
+    duration: float,
+    total_upserted: int,
+    total_errors: int,
+    sync_type: str,
+) -> None:
+    """Loguea alertas si hay issues en la sincronización."""
+    if total_upserted == 0:
+        logger.warning("⚠️  Sin épicas sincronizadas (posible problema de conectividad)")
+
+    error_rate = (total_errors / (total_errors + total_upserted) * 100) if (total_errors + total_upserted) > 0 else 0
+    if error_rate > 10:
+        logger.critical("🚨 ALERTA: Error rate %.1f%% (>10%%) | Errores: %d", error_rate, total_errors)
+
+    if sync_type == "DIFERENCIAL" and duration > 300:
+        logger.warning("⚠️  Sync diferencial tardó %.1fs (>5 min)", duration)
+    elif sync_type == "FULL" and duration > 600:
+        logger.warning("⚠️  Full sync tardó %.1fs (>10 min)", duration)
 
 
 async def _fetch_all_projects_async(
@@ -216,10 +264,33 @@ def run_sync(force_full_sync: bool = False) -> dict:
             except Exception as exc:
                 logger.error("  ✗ Error en upsert de %s: %s", key, exc)
                 projects_result.append({"key": key, "epics": 0, "errors": 1, "error": str(exc)})
+    except Exception as exc:
+        logger.error("❌ Error fatal en sincronización: %s", exc)
+        error_message = str(exc)
+    else:
+        error_message = None
     finally:
+        ended_at = datetime.now(timezone.utc)
+        duration = (ended_at - started_at).total_seconds()
+
+        try:
+            _save_sync_log(
+                db,
+                sync_type=sync_type,
+                started_at=started_at,
+                ended_at=ended_at,
+                duration=duration,
+                total_upserted=total_upserted,
+                total_errors=total_errors,
+                projects_result=projects_result,
+                error_message=error_message,
+            )
+            _check_sync_alerts(duration, total_upserted, total_errors, sync_type)
+        except Exception as e:
+            logger.error("⚠️  No se pudo guardar sync_log: %s", e)
+
         db.close()
 
-    duration = (datetime.now(timezone.utc) - started_at).total_seconds()
     logger.info(
         "✅  Completado en %.1fs — épicas: %d | errores: %d",
         duration, total_upserted, total_errors,
@@ -227,7 +298,7 @@ def run_sync(force_full_sync: bool = False) -> dict:
     logger.info(_DIVIDER)
 
     return {
-        "status": "ok",
+        "status": "ok" if not error_message else "error",
         "sync_type": sync_type,
         "started_at": started_at.isoformat(),
         "duration_seconds": round(duration, 2),
