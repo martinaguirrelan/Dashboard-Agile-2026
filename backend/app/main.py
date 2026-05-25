@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .database import check_db_connection, Base, engine
-from .routers import auth_router, items_router, sync_router, epics_router
+from .routers import auth_router, items_router, sync_router, epics_router, metrics_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -36,6 +36,7 @@ app.include_router(auth_router, prefix="/api")
 app.include_router(items_router, prefix="/api")
 app.include_router(sync_router,  prefix="/api")
 app.include_router(epics_router, prefix="/api")
+app.include_router(metrics_router, prefix="/api")
 
 # ── Scheduler (US-4) ─────────────────────────────────────────────────────────
 _scheduler = BackgroundScheduler(timezone="UTC")
