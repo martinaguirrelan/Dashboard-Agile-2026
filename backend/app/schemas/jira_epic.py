@@ -1,6 +1,7 @@
 from __future__ import annotations
 from datetime import date, datetime
 from uuid import UUID
+from typing import Any
 from pydantic import BaseModel
 
 
@@ -63,7 +64,7 @@ class SyncLogOut(BaseModel):
     total_errors: int | None
     status: str | None
     error_message: str | None
-    projects_detail: dict | None
+    projects_detail: Any | None
     created_at: datetime
 
     model_config = {"from_attributes": True}
