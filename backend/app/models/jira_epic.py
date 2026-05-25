@@ -1,6 +1,6 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, Date, DateTime, Integer, Numeric, Text, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, Boolean, Date, DateTime, Integer, Numeric, Text, ForeignKey, Float
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from ..database import Base
 
@@ -44,3 +44,35 @@ class JiraEpic(Base):
     sprint_fin         = Column(String, nullable=True)
     created_at       = Column(DateTime(timezone=True), server_default=func.now())
     updated_at       = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class SyncLog(Base):
+    __tablename__ = "sync_logs"
+
+    id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    sync_type        = Column(String, nullable=False)  # "FULL" | "DIFERENCIAL"
+    started_at       = Column(DateTime(timezone=True), nullable=False)
+    ended_at         = Column(DateTime(timezone=True), nullable=True)
+    duration_seconds = Column(Float, nullable=True)
+    total_upserted   = Column(Integer, nullable=True)
+    total_errors     = Column(Integer, nullable=True)
+    status           = Column(String, nullable=True)  # "success" | "partial" | "error"
+    error_message    = Column(Text, nullable=True)
+    projects_detail  = Column(JSONB, nullable=True)  # [{key, epics, errors}, ...]
+    created_at       = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class SyncMetric(Base):
+    __tablename__ = "sync_metrics"
+
+    id                   = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    date                 = Column(Date, nullable=False, unique=True, index=True)
+    sync_count           = Column(Integer, default=0)
+    avg_duration_seconds = Column(Float, nullable=True)
+    total_epics_upserted = Column(Integer, default=0)
+    total_errors         = Column(Integer, default=0)
+    error_rate           = Column(Float, nullable=True)  # percentage
+    fastest_sync_seconds = Column(Float, nullable=True)
+    slowest_sync_seconds = Column(Float, nullable=True)
+    created_at           = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at           = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

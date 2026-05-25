@@ -85,3 +85,38 @@ DROP TRIGGER IF EXISTS trg_jira_epics_updated_at ON jira_epics;
 CREATE TRIGGER trg_jira_epics_updated_at
     BEFORE UPDATE ON jira_epics
     FOR EACH ROW EXECUTE PROCEDURE _set_updated_at();
+
+-- 4. Histórico de sincronizaciones (Auditoría y Testing)
+CREATE TABLE IF NOT EXISTS sync_logs (
+    id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sync_type          TEXT NOT NULL,           -- "FULL" | "DIFERENCIAL"
+    started_at         TIMESTAMPTZ NOT NULL,
+    ended_at           TIMESTAMPTZ,
+    duration_seconds   FLOAT,
+    total_upserted     INT,
+    total_errors       INT,
+    status             TEXT,                   -- "success" | "partial" | "error"
+    error_message      TEXT,
+    projects_detail    JSONB,                  -- [{key, epics, errors}, ...]
+    created_at         TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_sync_logs_started_at ON sync_logs(started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sync_logs_status     ON sync_logs(status);
+
+-- 5. Métricas diarias agregadas de sincronizaciones
+CREATE TABLE IF NOT EXISTS sync_metrics (
+    id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    date                    DATE NOT NULL UNIQUE,
+    sync_count              INT DEFAULT 0,
+    avg_duration_seconds    FLOAT,
+    total_epics_upserted    INT DEFAULT 0,
+    total_errors            INT DEFAULT 0,
+    error_rate              FLOAT,              -- % (errors / total_attempts)
+    fastest_sync_seconds    FLOAT,
+    slowest_sync_seconds    FLOAT,
+    created_at              TIMESTAMPTZ DEFAULT NOW(),
+    updated_at              TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_sync_metrics_date ON sync_metrics(date DESC);
