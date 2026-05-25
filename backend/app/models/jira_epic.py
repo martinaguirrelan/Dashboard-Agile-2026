@@ -76,3 +76,33 @@ class SyncMetric(Base):
     slowest_sync_seconds = Column(Float, nullable=True)
     created_at           = Column(DateTime(timezone=True), server_default=func.now())
     updated_at           = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class Trimestre(Base):
+    __tablename__ = "trimestres"
+
+    id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    quarter          = Column(String, nullable=False, unique=True, index=True)
+    anio             = Column(Integer, nullable=False, index=True)
+    numero           = Column(Integer, nullable=False)
+    fecha_inicio     = Column(Date, nullable=False)
+    fecha_fin        = Column(Date, nullable=False)
+    descripcion      = Column(Text, nullable=True)
+    created_at       = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at       = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class Sprint(Base):
+    __tablename__ = "sprints"
+
+    id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    sprint_key       = Column(String, nullable=False, unique=True, index=True)
+    sprint_name      = Column(String, nullable=False)
+    numero           = Column(Integer, nullable=True)
+    project_key      = Column(String, ForeignKey("config_projects.project_key"), nullable=False, index=True)
+    fecha_inicio     = Column(Date, nullable=False, index=True)
+    fecha_fin        = Column(Date, nullable=False)
+    estado           = Column(String, default="active", index=True)
+    descripcion      = Column(Text, nullable=True)
+    created_at       = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at       = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

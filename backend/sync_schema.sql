@@ -120,3 +120,67 @@ CREATE TABLE IF NOT EXISTS sync_metrics (
 );
 
 CREATE INDEX IF NOT EXISTS idx_sync_metrics_date ON sync_metrics(date DESC);
+
+-- =============================================================
+-- 6. Trimestres (Baseline para Scope Creep Analysis - Épica 2)
+-- =============================================================
+CREATE TABLE IF NOT EXISTS trimestres (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    quarter          TEXT NOT NULL UNIQUE,        -- ej. "Q1-2026", "Q2-2026"
+    anio             INT NOT NULL,
+    numero           INT NOT NULL,                -- 1, 2, 3, 4
+    fecha_inicio     DATE NOT NULL,
+    fecha_fin        DATE NOT NULL,
+    descripcion      TEXT,
+    created_at       TIMESTAMPTZ DEFAULT NOW(),
+    updated_at       TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_trimestres_quarter ON trimestres(quarter);
+CREATE INDEX IF NOT EXISTS idx_trimestres_anio ON trimestres(anio);
+
+-- Seed inicial con trimestres 2026
+INSERT INTO trimestres (quarter, anio, numero, fecha_inicio, fecha_fin, descripcion) VALUES
+    ('Q1-2026', 2026, 1, '2026-01-01', '2026-03-31', 'Primer trimestre 2026'),
+    ('Q2-2026', 2026, 2, '2026-04-01', '2026-06-30', 'Segundo trimestre 2026'),
+    ('Q3-2026', 2026, 3, '2026-07-01', '2026-09-30', 'Tercer trimestre 2026'),
+    ('Q4-2026', 2026, 4, '2026-10-01', '2026-12-31', 'Cuarto trimestre 2026')
+ON CONFLICT (quarter) DO NOTHING;
+
+-- =============================================================
+-- 7. Sprints (Lead Time Agrupado por Sprint - Épica 1)
+-- =============================================================
+CREATE TABLE IF NOT EXISTS sprints (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sprint_key       TEXT NOT NULL UNIQUE,        -- ej. "SPRINT-1", "SPRINT-2"
+    sprint_name      TEXT NOT NULL,               -- ej. "Sprint 1", "Sprint 2"
+    numero           INT,                         -- número secuencial
+    project_key      TEXT NOT NULL
+        REFERENCES config_projects(project_key) ON DELETE RESTRICT,
+    fecha_inicio     DATE NOT NULL,
+    fecha_fin        DATE NOT NULL,
+    estado           TEXT DEFAULT 'active',       -- active, closed, future
+    descripcion      TEXT,
+    created_at       TIMESTAMPTZ DEFAULT NOW(),
+    updated_at       TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_sprints_project_key ON sprints(project_key);
+CREATE INDEX IF NOT EXISTS idx_sprints_estado ON sprints(estado);
+CREATE INDEX IF NOT EXISTS idx_sprints_fecha_inicio ON sprints(fecha_inicio);
+
+-- Seed inicial con algunos sprints de ejemplo
+INSERT INTO sprints (sprint_key, sprint_name, numero, project_key, fecha_inicio, fecha_fin, estado) VALUES
+    ('PM-SPRINT-1', 'Sprint 1', 1, 'PM', '2026-04-01', '2026-04-14', 'closed'),
+    ('PM-SPRINT-2', 'Sprint 2', 2, 'PM', '2026-04-15', '2026-04-28', 'closed'),
+    ('PM-SPRINT-3', 'Sprint 3', 3, 'PM', '2026-04-29', '2026-05-12', 'closed'),
+    ('PM-SPRINT-4', 'Sprint 4', 4, 'PM', '2026-05-13', '2026-05-26', 'active'),
+    ('SPI-SPRINT-1', 'Sprint 1', 1, 'SPI', '2026-04-01', '2026-04-14', 'closed'),
+    ('SPI-SPRINT-2', 'Sprint 2', 2, 'SPI', '2026-04-15', '2026-04-28', 'closed'),
+    ('SPI-SPRINT-3', 'Sprint 3', 3, 'SPI', '2026-04-29', '2026-05-12', 'closed'),
+    ('SPI-SPRINT-4', 'Sprint 4', 4, 'SPI', '2026-05-13', '2026-05-26', 'active'),
+    ('SVI-SPRINT-1', 'Sprint 1', 1, 'SVI', '2026-04-01', '2026-04-14', 'closed'),
+    ('SVI-SPRINT-2', 'Sprint 2', 2, 'SVI', '2026-04-15', '2026-04-28', 'closed'),
+    ('SVI-SPRINT-3', 'Sprint 3', 3, 'SVI', '2026-04-29', '2026-05-12', 'closed'),
+    ('SVI-SPRINT-4', 'Sprint 4', 4, 'SVI', '2026-05-13', '2026-05-26', 'active')
+ON CONFLICT (sprint_key) DO NOTHING;

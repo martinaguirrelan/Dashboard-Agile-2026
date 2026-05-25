@@ -83,3 +83,51 @@ class SyncMetricOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class TrimestreOut(BaseModel):
+    id: UUID
+    quarter: str
+    anio: int
+    numero: int
+    fecha_inicio: date
+    fecha_fin: date
+    descripcion: str | None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class SprintOut(BaseModel):
+    id: UUID
+    sprint_key: str
+    sprint_name: str
+    numero: int | None
+    project_key: str
+    fecha_inicio: date
+    fecha_fin: date
+    estado: str
+    descripcion: str | None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class MatrizVPTShirt(BaseModel):
+    """Matriz VP × T-Shirt Size (Épica 3)"""
+    vp: str | None
+    tamanio: str | None
+    cantidad: int
+
+
+class CapacidadVPOut(BaseModel):
+    """Respuesta de capacidad por VP"""
+    vp: str | None
+    iniciativas_s: int = 0
+    iniciativas_m: int = 0
+    iniciativas_l: int = 0
+    iniciativas_xl: int = 0
+    total: int = 0
+    formato: str  # ej: "MDA (2L, 1M)"
