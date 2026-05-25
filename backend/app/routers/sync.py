@@ -90,7 +90,7 @@ def get_sync_logs(days: int = Query(7, ge=1, le=90), db: Session = Depends(get_d
     logger = logging.getLogger(__name__)
     try:
         since = datetime.now(timezone.utc) - timedelta(days=days)
-        logs = db.query(SyncLog).filter(SyncLog.created_at >= since).order_by(SyncLog.created_at.desc()).all()
+        logs = db.query(SyncLog).filter(SyncLog.created_at >= since).all()
         logger.info(f"Found {len(logs)} sync logs")
         result = []
         for log in logs:
