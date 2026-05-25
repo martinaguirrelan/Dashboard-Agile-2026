@@ -308,9 +308,81 @@ def run_sync(force_full_sync: bool = False) -> dict:
     }
 
 
+def _aggregate_daily_metrics(db: Session) -> None:
+    """Agrega métricas diarias basadas en sync_logs del día."""
+    from datetime import date
+
+    today = date.today()
+    since = datetime.combine(today, datetime.min.time()).replace(tzinfo=timezone.utc)
+    until = datetime.combine(today, datetime.max.time()).replace(tzinfo=timezone.utc)
+
+    logs = db.query(SyncLog).filter(
+        SyncLog.created_at >= since,
+        SyncLog.created_at <= until
+    ).all()
+
+    if not logs:
+        logger.info("ℹ️  Sin logs de sync hoy, omitiendo agregación de métricas")
+        return
+
+    sync_count = len(logs)
+    total_upserted = sum(log.total_upserted or 0 for log in logs)
+    total_errors = sum(log.total_errors or 0 for log in logs)
+    total_attempts = total_upserted + total_errors
+
+    durations = [log.duration_seconds for log in logs if log.duration_seconds]
+    avg_duration = sum(durations) / len(durations) if durations else None
+    fastest_sync = min(durations) if durations else None
+    slowest_sync = max(durations) if durations else None
+
+    error_rate = (total_errors / total_attempts * 100) if total_attempts > 0 else 0
+
+    # Upsert métrica del día
+    from sqlalchemy import select
+    existing = db.query(SyncMetric).filter(SyncMetric.date == today).first()
+
+    if existing:
+        existing.sync_count = sync_count
+        existing.avg_duration_seconds = avg_duration
+        existing.total_epics_upserted = total_upserted
+        existing.total_errors = total_errors
+        existing.error_rate = round(error_rate, 2)
+        existing.fastest_sync_seconds = fastest_sync
+        existing.slowest_sync_seconds = slowest_sync
+        db.commit()
+        logger.info("📊 Métricas del día actualizadas: %d syncs, %.1f épicas/sync, %.1f%% error",
+                   sync_count, total_upserted/sync_count if sync_count else 0, error_rate)
+    else:
+        metric = SyncMetric(
+            date=today,
+            sync_count=sync_count,
+            avg_duration_seconds=avg_duration,
+            total_epics_upserted=total_upserted,
+            total_errors=total_errors,
+            error_rate=round(error_rate, 2),
+            fastest_sync_seconds=fastest_sync,
+            slowest_sync_seconds=slowest_sync,
+        )
+        db.add(metric)
+        db.commit()
+        logger.info("📊 Métrica diaria creada: %d syncs, %.1f épicas/sync, %.1f%% error",
+                   sync_count, total_upserted/sync_count if sync_count else 0, error_rate)
+
+
 def run_full_sync() -> dict:
-    """Ejecuta un full sync (fuerza traer todos los épicos)."""
+    """Ejecuta un full sync (fuerza traer todos los épicos) y agrega métricas."""
     logger.info(_DIVIDER)
-    logger.info("🔄  FULL SYNC PROGRAMADO cada 24h — limpiando registros orphaned")
+    logger.info("🔄  FULL SYNC PROGRAMADO cada 24h")
     logger.info(_DIVIDER)
-    return run_sync(force_full_sync=True)
+    result = run_sync(force_full_sync=True)
+
+    # Agregar métricas diarias después del full sync
+    db = SessionLocal()
+    try:
+        _aggregate_daily_metrics(db)
+    except Exception as e:
+        logger.error("⚠️  Error agregando métricas diarias: %s", e)
+    finally:
+        db.close()
+
+    return result
