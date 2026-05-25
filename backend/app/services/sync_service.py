@@ -310,11 +310,11 @@ def run_sync(force_full_sync: bool = False) -> dict:
 
 def _aggregate_daily_metrics(db: Session) -> None:
     """Agrega métricas diarias basadas en sync_logs del día."""
-    from datetime import date
+    from datetime import date, time
 
     today = date.today()
-    since = datetime.combine(today, datetime.min.time()).replace(tzinfo=timezone.utc)
-    until = datetime.combine(today, datetime.max.time()).replace(tzinfo=timezone.utc)
+    since = datetime(today.year, today.month, today.day, 0, 0, 0, tzinfo=timezone.utc)
+    until = datetime(today.year, today.month, today.day, 23, 59, 59, tzinfo=timezone.utc)
 
     logs = db.query(SyncLog).filter(
         SyncLog.created_at >= since,
