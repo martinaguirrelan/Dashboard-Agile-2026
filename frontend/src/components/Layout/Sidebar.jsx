@@ -8,14 +8,30 @@ const NAV_ITEMS = [
   { to: '/team',    icon: 'groups',       label: 'Salud del Equipo' },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
   const { isAdmin, logout } = useAuth()
 
   return (
-    <aside className="h-screen w-64 fixed left-0 top-0 border-r border-outline-variant bg-surface flex flex-col py-1 shadow-sm z-50">
-      <div className="px-container-padding mb-8 mt-4">
-        <h1 className="text-headline-md font-bold text-primary">Insights Ejecutivos</h1>
-        <p className="text-body-base text-on-surface-variant">Suite de Salud Agile</p>
+    <aside
+      className={`
+        h-screen w-64 fixed left-0 top-0 border-r border-outline-variant bg-surface flex flex-col py-1 shadow-sm z-50
+        transform transition-transform duration-300
+        md:translate-x-0
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}
+    >
+      <div className="px-container-padding mb-8 mt-4 flex items-start justify-between">
+        <div>
+          <h1 className="text-headline-md font-bold text-primary">Insights Ejecutivos</h1>
+          <p className="text-body-base text-on-surface-variant">Suite de Salud Agile</p>
+        </div>
+        <button
+          onClick={onClose}
+          className="md:hidden w-11 h-11 flex items-center justify-center text-on-surface-variant hover:bg-surface-container rounded-lg transition-colors"
+          aria-label="Cerrar menú"
+        >
+          <span className="material-symbols-outlined">close</span>
+        </button>
       </div>
 
       <nav className="flex-grow space-y-1">
@@ -24,6 +40,7 @@ export default function Sidebar() {
             key={to}
             to={to}
             end={to === '/'}
+            onClick={onClose}
             className={({ isActive }) =>
               `flex items-center px-container-padding py-3 transition-colors duration-200 ` +
               (isActive
@@ -41,6 +58,7 @@ export default function Sidebar() {
         {isAdmin && (
           <NavLink
             to="/admin"
+            onClick={onClose}
             className="block w-full py-2 text-center border border-outline text-on-surface-variant font-label-caps text-label-caps rounded-lg hover:bg-surface-container transition-colors"
           >
             Panel Admin

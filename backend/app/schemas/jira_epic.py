@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID
 from pydantic import BaseModel
 
@@ -8,6 +8,7 @@ class ConfigProjectOut(BaseModel):
     id: UUID
     project_key: str
     project_name: str | None
+    vp: str | None
     is_active: bool
     created_at: datetime
 
@@ -26,7 +27,17 @@ class JiraEpicOut(BaseModel):
     project_key: str
     lead_time_days: int | None
     status: str | None
+    estado_normalizado: str | None
     assignee: str | None
+    year: int | None
+    quarter: str | None
+    sprint_inicio:      str | None
+    estimacion_inicial: str | None
+    estimacion_final:   str | None
+    estado_iniciativa:  str | None
+    fecha_done:         date | None
+    fecha_prd:          date | None
+    sprint_fin:         str | None
     created_at: datetime
     updated_at: datetime
 

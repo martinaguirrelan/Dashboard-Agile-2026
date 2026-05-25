@@ -41,6 +41,37 @@ CREATE INDEX IF NOT EXISTS idx_jira_epics_project_key ON jira_epics(project_key)
 CREATE INDEX IF NOT EXISTS idx_jira_epics_status      ON jira_epics(status);
 CREATE INDEX IF NOT EXISTS idx_jira_epics_due_date    ON jira_epics(due_date);
 
+-- Migration: columnas ETL año/trimestre (US-3)
+-- Ejecutar si la tabla ya existía antes de esta versión
+ALTER TABLE jira_epics
+    ADD COLUMN IF NOT EXISTS year    INT,
+    ADD COLUMN IF NOT EXISTS quarter TEXT;
+
+-- Migration: estado normalizado para KPIs del dashboard
+ALTER TABLE jira_epics
+    ADD COLUMN IF NOT EXISTS estado_normalizado TEXT;
+    -- Valores controlados: por_iniciar | en_desarrollo | en_pruebas | en_revision | en_prd | finalizada
+
+-- Migration: campos ciclo de vida iniciativas (US-5)
+ALTER TABLE jira_epics
+    ADD COLUMN IF NOT EXISTS sprint_inicio      TEXT,
+    ADD COLUMN IF NOT EXISTS estimacion_inicial TEXT,
+    ADD COLUMN IF NOT EXISTS estimacion_final   TEXT,
+    ADD COLUMN IF NOT EXISTS estado_iniciativa  TEXT,
+    ADD COLUMN IF NOT EXISTS fecha_done         TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS fecha_prd          TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS sprint_fin         TEXT;
+
+-- Migration: fecha_done y fecha_prd cambian de TIMESTAMPTZ a DATE (solo fecha, sin hora)
+ALTER TABLE jira_epics
+    ALTER COLUMN fecha_done TYPE DATE USING fecha_done::DATE,
+    ALTER COLUMN fecha_prd  TYPE DATE USING fecha_prd::DATE;
+
+-- Migration: estimacion_inicial/final cambian de NUMERIC a TEXT (tallas T-shirt: S, M, L, XL)
+ALTER TABLE jira_epics
+    ALTER COLUMN estimacion_inicial TYPE TEXT USING estimacion_inicial::TEXT,
+    ALTER COLUMN estimacion_final   TYPE TEXT USING estimacion_final::TEXT;
+
 -- 3. Trigger updated_at automático
 CREATE OR REPLACE FUNCTION _set_updated_at()
 RETURNS TRIGGER AS $$

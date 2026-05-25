@@ -7,6 +7,7 @@ import RoadmapPage from './pages/RoadmapPage'
 import TeamHealthPage from './pages/TeamHealthPage'
 import LoginPage from './pages/LoginPage'
 import AdminPage from './pages/AdminPage'
+import SquadDetailPage from './pages/SquadDetailPage'
 
 function PrivateRoute({ children }) {
   const { isAdmin } = useAuth()
@@ -21,8 +22,15 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+
+      {/* Dashboard principal — sin Layout (tiene su propio header) */}
+      <Route path="/" element={<DashboardPage />} />
+
+      {/* Squad detail — sin Layout (tema oscuro independiente) */}
+      <Route path="/squad/:projectKey" element={<SquadDetailPage />} />
+
+      {/* Páginas secundarias — con Layout (sidebar) */}
       <Route element={<Layout />}>
-        <Route path="/"        element={<DashboardPage />} />
         <Route path="/dora"    element={<DoraMetricsPage />} />
         <Route path="/roadmap" element={<RoadmapPage />} />
         <Route path="/team"    element={<TeamHealthPage />} />
@@ -34,8 +42,9 @@ function AppRoutes() {
             </PrivateRoute>
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
