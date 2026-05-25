@@ -86,15 +86,12 @@ def sync_status(db: Session = Depends(get_db)):
 @router.get("/logs")
 def get_sync_logs(days: int = Query(7, ge=1, le=90), db: Session = Depends(get_db)):
     """Últimos N días de histórico de sincronización (sin autenticación)."""
-    import logging
-    logger = logging.getLogger(__name__)
     try:
         since = datetime.now(timezone.utc) - timedelta(days=days)
         logs = db.query(SyncLog).filter(SyncLog.created_at >= since).all()
-        logger.info(f"Found {len(logs)} sync logs")
+
         result = []
         for log in logs:
-            logger.info(f"Processing log: {log.id}")
             log_dict = {
                 "id": str(log.id),
                 "sync_type": log.sync_type,
@@ -109,11 +106,10 @@ def get_sync_logs(days: int = Query(7, ge=1, le=90), db: Session = Depends(get_d
                 "created_at": log.created_at.isoformat() if log.created_at else None,
             }
             result.append(log_dict)
-        logger.info(f"Returning {len(result)} logs")
         return result
     except Exception as e:
-        logger.error(f"Error fetching sync logs: {e}", exc_info=True)
-        return {"error": str(e)}
+        import traceback
+        return {"error": str(e), "traceback": traceback.format_exc()}
 
 
 @router.get("/summary")
