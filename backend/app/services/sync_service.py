@@ -369,19 +369,84 @@ def _aggregate_daily_metrics(db: Session) -> None:
                    sync_count, total_upserted/sync_count if sync_count else 0, error_rate)
 
 
+
+def _cleanup_orphaned_epics(db: Session, sync_started_at: datetime, project_keys: list[str]) -> tuple[int, list[str]]:
+    """
+    Elimina épicas huérfanas que NO fueron actualizadas en este full sync.
+    
+    Lógica: Si un épica en BD tiene updated_at < sync_started_at, significa que
+    fue ignorada en el full sync, por lo tanto ya no existe en Jira.
+    
+    Retorna: (cantidad_eliminadas, lista_de_keys_eliminadas)
+    """
+    deleted_count = 0
+    deleted_keys: list[str] = []
+    
+    for project_key in project_keys:
+        try:
+            # Buscar épicas que NO fueron actualizadas en este sync
+            orphaned = db.query(JiraEpic).filter(
+                JiraEpic.project_key == project_key,
+                JiraEpic.updated_at < sync_started_at
+            ).all()
+            
+            for epic in orphaned:
+                logger.info("    🗑️  Eliminando épica huérfana: %s (%s)", 
+                           epic.jira_issue_id, epic.epic_name)
+                db.delete(epic)
+                deleted_keys.append(epic.jira_issue_id)
+                deleted_count += 1
+            
+            db.commit()
+            
+            if deleted_count > 0:
+                logger.info("  → %s: %d épicas eliminadas (ya no existen en Jira)", 
+                           project_key, deleted_count)
+        except Exception as exc:
+            logger.error("  ✗ Error limpiando orphaned epics en %s: %s", project_key, exc)
+            db.rollback()
+    
+    return deleted_count, deleted_keys
+
+
 def run_full_sync() -> dict:
-    """Ejecuta un full sync (fuerza traer todos los épicos) y agrega métricas."""
+    """
+    Ejecuta un full sync (fuerza traer todos los épicos) y:
+    1. Agrega métricas diarias
+    2. Limpia épicas huérfanas (eliminadas en Jira)
+    """
     logger.info(_DIVIDER)
     logger.info("🔄  FULL SYNC PROGRAMADO cada 24h")
     logger.info(_DIVIDER)
+    
+    # Capturar timestamp de inicio ANTES del sync
+    sync_started_at = datetime.now(timezone.utc)
+    
+    # Ejecutar full sync normal
     result = run_sync(force_full_sync=True)
 
-    # Agregar métricas diarias después del full sync
+    # Agregar métricas diarias y limpiar huérfanos después del full sync
     db = SessionLocal()
     try:
         _aggregate_daily_metrics(db)
+        
+        # ↓↓↓ LIMPIAR ÉPICAS HUÉRFANAS ↓↓↓
+        keys = _active_project_keys(db)
+        if keys:
+            logger.info("🧹 Limpiando épicas eliminadas en Jira...")
+            deleted_count, deleted_keys = _cleanup_orphaned_epics(db, sync_started_at, keys)
+            
+            if deleted_count > 0:
+                result["cleanup"] = {
+                    "deleted_count": deleted_count,
+                    "deleted_keys": deleted_keys,
+                }
+                logger.info("✅ Limpieza completada: %d épicas removidas", deleted_count)
+            else:
+                logger.info("✅ Limpieza completada: sin épicas huérfanas")
+        
     except Exception as e:
-        logger.error("⚠️  Error agregando métricas diarias: %s", e)
+        logger.error("⚠️  Error en post-sync: %s", e)
     finally:
         db.close()
 
