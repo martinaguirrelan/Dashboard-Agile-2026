@@ -83,3 +83,33 @@ class SyncMetricOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class TrimestreOut(BaseModel):
+    id: UUID
+    quarter: str
+    anio: int
+    numero: int
+    fecha_inicio: date
+    fecha_fin: date
+    descripcion: str | None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class SprintOut(BaseModel):
+    id: UUID
+    sprint_key: str
+    sprint_name: str
+    numero: int
+    project_key: str
+    fecha_inicio: date
+    fecha_fin: date
+    estado: str | None
+    descripcion: str | None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
