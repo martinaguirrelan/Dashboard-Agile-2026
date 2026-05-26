@@ -113,3 +113,24 @@ class SprintOut(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class LeadTimeSprintOut(BaseModel):
+    """ÉPICA 1: Estadísticas de lead time por sprint"""
+    sprint_key: str | None
+    sprint_name: str | None
+    epics_completed: int
+    avg_lead_time_days: float | None
+    min_lead_time_days: int | None
+    max_lead_time_days: int | None
+
+
+class ScopeCreepOut(BaseModel):
+    """ÉPICA 2: Análisis de scope creep por VP"""
+    vp: str
+    total_initiatives: int
+    initiatives_with_estimation: int
+    baseline_size_total: int
+    final_size_total: int
+    scope_creep_percentage: float
+    scope_creep_status: str  # "within_bounds" | "moderate" | "exceeded"
