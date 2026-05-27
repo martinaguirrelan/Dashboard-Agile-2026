@@ -151,7 +151,33 @@ INFO: JIRA sync scheduler started
 INFO: Background sync task running...
 ```
 
-## 7. Troubleshooting
+## 7. Troubleshooting - Problema: "Build fails instantly with zero logs"
+
+### Si Railway detiene el build antes de emitir logs:
+
+**Este es un problema de detección de Railpack.** Hemos creado tres archivos de configuración que ayudan a Railpack a detectar tu proyecto Python:
+
+1. **`backend/railway.toml`** — Configura Nixpacks explícitamente con provider Python
+2. **`backend/.nixpacks.toml`** — Configuración directa para Nixpacks  
+3. **`backend/nixpacks.toml`** — Alternativa de configuración para Nixpacks
+
+**Pasos para resolver:**
+
+1. Asegúrate que **Root Directory** en Railway está configurado a `backend/`
+2. En Railway → Settings → Haz clic en **"Rebuild"** para forzar un nuevo build
+3. Esta vez Railpack debería:
+   - Detectar el provider `python`
+   - Ver `requirements.txt`
+   - Ejecutar `pip install -r requirements.txt`
+   - Emitir logs en tiempo real
+   - Iniciar `bash start.sh`
+
+Si aún falla:
+- Ve a Railway Logs y busca errores de sintaxis TOML
+- Verifica que no hay caracteres especiales en los archivos TOML
+- Prueba primero localmente: `bash backend/start.sh`
+
+---
 
 ### Build falla con error de imports
 - Revisa el log completo en Railway
