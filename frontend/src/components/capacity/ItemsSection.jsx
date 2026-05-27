@@ -43,13 +43,16 @@ function StatusBadge({ status }) {
 export function ItemsSection({ items = [] }) {
   const [filterStatus, setFilterStatus] = useState('all')
 
+  // Ensure items is an array
+  const itemsArray = Array.isArray(items) ? items : []
+
   const filteredItems = filterStatus === 'all'
-    ? items
-    : items.filter((item) => item.estado === filterStatus)
+    ? itemsArray
+    : itemsArray.filter((item) => item.estado === filterStatus)
 
-  const statuses = ['all', ...new Set(items.map((i) => i.estado))]
+  const statuses = ['all', ...new Set(itemsArray.map((i) => i.estado))]
 
-  if (!items || items.length === 0) {
+  if (!itemsArray || itemsArray.length === 0) {
     return (
       <div style={{
         background: T.surface,
@@ -70,7 +73,7 @@ export function ItemsSection({ items = [] }) {
 
   // Count items by status
   const statusCounts = {}
-  items.forEach((item) => {
+  itemsArray.forEach((item) => {
     statusCounts[item.estado] = (statusCounts[item.estado] || 0) + 1
   })
 
