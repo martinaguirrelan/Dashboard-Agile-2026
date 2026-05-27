@@ -21,9 +21,9 @@ Este documento te guía paso a paso para desplegar el backend en Railway.
 1. Haz clic en "New Project"
 2. Selecciona "Deploy from GitHub repo"
 3. Busca y elige `Dashboard-Agile-2026`
-4. Railroad desplegará el servicio
+4. Railway desplegará el servicio
 
-### b) **⚠️ IMPORTANTE - Configurar root directory (este es el paso que faltaba)**
+### b) **⚠️ IMPORTANTE - Configurar root directory**
 1. En Railway Dashboard → Abre tu proyecto → Servicio "backend"
 2. Ve a la pestaña **Settings** (engranaje)
 3. Busca **"Root Directory"** 
@@ -32,6 +32,18 @@ Este documento te guía paso a paso para desplegar el backend en Railway.
 6. Railway automáticamente reiniciará el build con la configuración correcta
 
 > **Por qué:** Tu repo es un monorepo con carpetas `backend/` y `frontend/`. Railway necesita saber que el código Python está en `backend/`.
+
+### c) Archivos de configuración para Railpack
+Los siguientes archivos ayudan a Railpack (el builder de Railway) a detectar automáticamente tu proyecto Python:
+
+- **`backend/railway.toml`** — Instrucciones explícitas de build y start
+- **`backend/pyproject.toml`** — Metadata del proyecto Python
+- **`backend/requirements.txt`** — Dependencias (ya existía)
+
+Estos archivos **ya han sido creados automáticamente** en tu rama. Railway los usará para:
+1. Detectar que es un proyecto Python/FastAPI
+2. Ejecutar `pip install -r requirements.txt`
+3. Iniciar con `bash start.sh`
 
 ### b) Configurar variables de entorno
 Una vez creado el proyecto, necesitas agregar variables de entorno:
@@ -179,5 +191,7 @@ Railway ofrece:
 - [ ] `.env` local tiene todos los secrets correctos
 - [ ] Hiciste push a tu rama (no a main)
 - [ ] `railway.json` en raíz del repo (ya creado)
+- [ ] `backend/railway.toml` con build/start commands (ya creado)
+- [ ] `backend/pyproject.toml` con metadata Python (ya creado)
 
 ¡Listo! Una vez completes estos pasos, tu backend estará corriendo en Railway. 🎉
