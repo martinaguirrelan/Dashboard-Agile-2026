@@ -100,7 +100,7 @@ export function CapacityKPIs({ computed }) {
       />
       <KPICard
         label="Items Cerrados"
-        value={`${(computed.items || []).filter(i => i.s === 'Done').length}`}
+        value={`${Array.isArray(computed.items) ? computed.items.filter(i => i.s === 'Done').length : 0}`}
         color={T.green}
         icon="task_alt"
       />
