@@ -8,6 +8,7 @@ import TeamHealthPage from './pages/TeamHealthPage'
 import LoginPage from './pages/LoginPage'
 import AdminPage from './pages/AdminPage'
 import SquadDetailPage from './pages/SquadDetailPage'
+import CapacityDashboardPage from './pages/CapacityDashboardPage'
 
 function PrivateRoute({ children }) {
   const { isAdmin } = useAuth()
@@ -28,6 +29,9 @@ function AppRoutes() {
 
       {/* Squad detail — sin Layout (tema oscuro independiente) */}
       <Route path="/squad/:projectKey" element={<SquadDetailPage />} />
+
+      {/* Capacity dashboard — sin Layout (tema oscuro independiente) */}
+      <Route path="/capacity/:projectKey" element={<CapacityDashboardPage />} />
 
       {/* Páginas secundarias — con Layout (sidebar) */}
       <Route element={<Layout />}>
