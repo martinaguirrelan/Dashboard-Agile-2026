@@ -2,9 +2,7 @@ import axios from 'axios'
 
 const TOKEN_KEY = 'admin_token'
 
-const baseURL = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api`
-  : '/api'
+const baseURL = import.meta.env.VITE_API_URL || '/api'
 
 const client = axios.create({
   baseURL,
