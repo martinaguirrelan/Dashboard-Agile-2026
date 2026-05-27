@@ -93,14 +93,14 @@ export function CapacityKPIs({ computed }) {
       />
       <KPICard
         label="Horas Esperadas"
-        value={`${computed.horasEsperadas || 0}`}
+        value={`${Math.round((computed.hTotalSec || 0) / 3600)}`}
         unit="h"
         color={T.amber}
         icon="timer"
       />
       <KPICard
         label="Items Cerrados"
-        value={`${computed.itemsCerrados || 0}`}
+        value={`${(computed.items || []).filter(i => i.s === 'Done').length}`}
         color={T.green}
         icon="task_alt"
       />
