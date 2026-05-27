@@ -13,6 +13,7 @@ import '../dashboard.css'
 
 const TWEAK_DEFAULTS = {
   palette:      ['#eaecf4', '#1a2238', '#e65a35'],
+  darkMode:     false,
   density:      'regular',
   chartStyle:   'rich',
   sparkInKpi:   true,
@@ -49,8 +50,29 @@ function formatNow() {
   return `${day} ${mon} ${year}, ${hh}:${mm}`
 }
 
-function applyTheme(palette) {
-  const [bg, ink, accent] = palette
+function applyTheme(palette, darkMode) {
+  let [bg, ink, accent] = palette
+
+  // If dark mode is enabled, invert the palette
+  if (darkMode) {
+    // Map light colors to dark equivalents
+    const darkPalettes = {
+      '#eaecf4,#1a2238,#e65a35': { bg: '#0b0d11', ink: '#e2e8f0', accent: '#ff6b4a' },
+      '#eaecf4,#1a2238,#2a5cb0': { bg: '#0b0d11', ink: '#e2e8f0', accent: '#3b82f6' },
+      '#f4f1ea,#14171c,#c98a1e': { bg: '#0f1117', ink: '#e8e6e1', accent: '#f59e0b' },
+      '#ecede8,#1b2620,#3a7a55': { bg: '#0a0f0d', ink: '#e8ede8', accent: '#22c55e' },
+      '#15171c,#f0f2f7,#e65a35': { bg: '#1a1f27', ink: '#14171c', accent: '#ff6b4a' },
+    }
+
+    const key = `${palette[0]},${palette[1]},${palette[2]}`
+    const dark = darkPalettes[key]
+    if (dark) {
+      bg = dark.bg
+      ink = dark.ink
+      accent = dark.accent
+    }
+  }
+
   document.documentElement.style.setProperty('--bg', bg)
   document.documentElement.style.setProperty('--ink', ink)
   document.documentElement.style.setProperty('--accent', accent)
@@ -727,7 +749,7 @@ function TweaksPanel({ t, setTweak }) {
             </button>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
             <span style={{ color: 'rgba(41,38,27,.72)' }}>Bloque insight</span>
             <button onClick={() => setTweak('showInsight', !t.showInsight)}
               style={{
@@ -737,6 +759,22 @@ function TweaksPanel({ t, setTweak }) {
               }}>
               <div style={{
                 position: 'absolute', top: 2, left: t.showInsight ? 14 : 2,
+                width: 14, height: 14, borderRadius: '50%', background: '#fff',
+                transition: 'left .15s', boxShadow: '0 1px 2px rgba(0,0,0,.25)',
+              }}/>
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: 'rgba(41,38,27,.72)' }}>Modo oscuro</span>
+            <button onClick={() => setTweak('darkMode', !t.darkMode)}
+              style={{
+                width: 32, height: 18, borderRadius: 999, border: 'none',
+                background: t.darkMode ? '#34c759' : 'rgba(0,0,0,.15)',
+                cursor: 'pointer', position: 'relative', transition: 'background .15s',
+              }}>
+              <div style={{
+                position: 'absolute', top: 2, left: t.darkMode ? 14 : 2,
                 width: 14, height: 14, borderRadius: '50%', background: '#fff',
                 transition: 'left .15s', boxShadow: '0 1px 2px rgba(0,0,0,.25)',
               }}/>
@@ -774,7 +812,7 @@ export default function DashboardPage() {
     }).finally(() => setLoading(false))
   }, [])
 
-  useEffect(() => { applyTheme(t.palette) }, [t.palette])
+  useEffect(() => { applyTheme(t.palette, t.darkMode) }, [t.palette, t.darkMode])
   useEffect(() => { document.body.dataset.density = t.density }, [t.density])
 
   const vps    = useMemo(() => buildVPs(projects), [projects])
