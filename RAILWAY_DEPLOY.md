@@ -153,29 +153,56 @@ INFO: Background sync task running...
 
 ## 7. Troubleshooting - Problema: "Build fails instantly with zero logs"
 
-### Si Railway detiene el build antes de emitir logs:
+### ⚠️ CRÍTICO: Si pasaste por 5+ fallos silenciosos de Railpack
 
-**Este es un problema de detección de Railpack.** Hemos creado tres archivos de configuración que ayudan a Railpack a detectar tu proyecto Python:
+**Problema root cause:** Railpack estaba crasheando durante plan creation sin emitir logs.
 
-1. **`backend/railway.toml`** — Configura Nixpacks explícitamente con provider Python
-2. **`backend/.nixpacks.toml`** — Configuración directa para Nixpacks  
-3. **`backend/nixpacks.toml`** — Alternativa de configuración para Nixpacks
+**Solución implementada:**
+1. ✅ Simplificado `railway.toml` (eliminados archivos TOML conflictivos)
+2. ✅ Actualizado `Procfile` para usar uvicorn directo (no bash script)
+3. ✅ Agregado `setup.py` para detectión explícita de Python
+4. ✅ `pyproject.toml` proporciona metadata de proyecto
 
-**Pasos para resolver:**
+### Pasos para resolver (después de los cambios):
 
-1. Asegúrate que **Root Directory** en Railway está configurado a `backend/`
-2. En Railway → Settings → Haz clic en **"Rebuild"** para forzar un nuevo build
-3. Esta vez Railpack debería:
-   - Detectar el provider `python`
-   - Ver `requirements.txt`
-   - Ejecutar `pip install -r requirements.txt`
-   - Emitir logs en tiempo real
-   - Iniciar `bash start.sh`
+**1. Limpiar el estado en Railway:**
+- Railway → Proyecto → Servicio backend → Settings
+- Haz clic en **"Redeploy"** (no Rebuild)
+- Esto limpia cualquier cache que pueda estar causando el problema
 
-Si aún falla:
-- Ve a Railway Logs y busca errores de sintaxis TOML
-- Verifica que no hay caracteres especiales en los archivos TOML
-- Prueba primero localmente: `bash backend/start.sh`
+**2. Forzar un nuevo build:**
+- Railway → Deployments → Haz clic en **"Deploy"** (botón azul)
+- Selecciona la rama `feat/epicas-1-2-implementacion`
+- Railway inicia un build completamente nuevo
+
+**3. Monitorear logs (ahora deberías verlos):**
+```
+✓ Detected Python runtime
+✓ Installing dependencies from requirements.txt
+✓ Running: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+✓ Application started
+```
+
+### Si AÚN hay problemas:
+
+**Opción A: Hard reset en Railway**
+1. Railway → Servicio backend → Settings
+2. Baja hasta "Danger Zone"
+3. Haz clic en **"Delete Service"**
+4. Vuelve a crear: New Service → GitHub repo → `Dashboard-Agile-2026`
+5. Configura Root Directory = `backend/`
+6. Deploy
+
+**Opción B: Verificar configuración local**
+```bash
+cd backend
+
+# Test que el app inicia localmente
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+# Deberías ver:
+# INFO: Uvicorn running on http://0.0.0.0:8000
+```
 
 ---
 
