@@ -21,7 +21,17 @@ Este documento te guía paso a paso para desplegar el backend en Railway.
 1. Haz clic en "New Project"
 2. Selecciona "Deploy from GitHub repo"
 3. Busca y elige `Dashboard-Agile-2026`
-4. Railway detectará automáticamente que hay un `backend/` gracias al `railway.json`
+4. Railroad desplegará el servicio
+
+### b) **⚠️ IMPORTANTE - Configurar root directory (este es el paso que faltaba)**
+1. En Railway Dashboard → Abre tu proyecto → Servicio "backend"
+2. Ve a la pestaña **Settings** (engranaje)
+3. Busca **"Root Directory"** 
+4. Cambia de `/` a `backend/`
+5. Haz clic **Save**
+6. Railway automáticamente reiniciará el build con la configuración correcta
+
+> **Por qué:** Tu repo es un monorepo con carpetas `backend/` y `frontend/`. Railway necesita saber que el código Python está en `backend/`.
 
 ### b) Configurar variables de entorno
 Una vez creado el proyecto, necesitas agregar variables de entorno:
@@ -162,11 +172,12 @@ Railway ofrece:
 
 ## Checklist antes de push
 
-- [ ] `railway.json` en `backend/`
+- [ ] Root directory en Railway configurado a `backend/`
 - [ ] Variables de entorno copiadas a Railway
 - [ ] `DATABASE_URL` apunta a Supabase
 - [ ] `requirements.txt` actualizado
 - [ ] `.env` local tiene todos los secrets correctos
 - [ ] Hiciste push a tu rama (no a main)
+- [ ] `railway.json` en raíz del repo (ya creado)
 
 ¡Listo! Una vez completes estos pasos, tu backend estará corriendo en Railway. 🎉
