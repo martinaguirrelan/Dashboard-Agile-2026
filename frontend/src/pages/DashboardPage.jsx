@@ -119,6 +119,8 @@ function FilterBar({ filters, onChange, vps, squads }) {
     filters.squad !== 'all' && squads.find((s) => s.id === filters.squad)?.name,
   ].filter(Boolean)
 
+  const selectedSquad = filters.squad !== 'all' ? squads.find((s) => s.id === filters.squad) : null
+
   return (
     <>
       <div className="filters" data-mobile-open={openMobile ? '1' : '0'}>
@@ -139,6 +141,17 @@ function FilterBar({ filters, onChange, vps, squads }) {
         <FilterSelect label="Squad" value={filters.squad}
                       options={[{v:'all',l:'Todos los squads'}, ...squadsForVp.map((s) => ({v:s.id,l:s.name}))]}
                       onChange={(v) => onChange({ squad: v })}/>
+
+        {selectedSquad && (
+          <Link
+            to={`/squad/${selectedSquad.id.toUpperCase()}`}
+            className="btn-primary"
+            style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            onClick={() => setOpenMobile(false)}
+          >
+            Detalle <IconArrow/>
+          </Link>
+        )}
 
         <button className="btn-reset" onClick={() => onChange({ year: 2026, q: 2, vp: 'all', squad: 'all' })}>
           Restablecer
@@ -436,14 +449,8 @@ function InitiativesTable({ initiatives, squads, vps, onSelect, tab, onTabChange
                     </td>
                     <td><StatusPill status={i.status}/></td>
                     <td className="num mono">{i.leadtime > 0 ? `${i.leadtime}d` : '—'}</td>
-                    <td>
-                      <Link
-                        to={`/squad/${i.squad.toUpperCase()}`}
-                        style={{ color: 'var(--ink)', textDecoration: 'none', fontWeight: 500 }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {squadOf(i.squad)?.name || i.squad}
-                      </Link>
+                    <td style={{ color: 'var(--ink)', fontWeight: 500 }}>
+                      {squadOf(i.squad)?.name || i.squad}
                     </td>
                     <td className="muted">{vpOf(i.squad)?.short}</td>
                     <td className="cell-progress"><Progress value={i.progress} tone={progressTone(i)}/></td>
@@ -611,9 +618,6 @@ function DetailDrawer({ item, onClose, squads, vps }) {
           </div>
         )}
         <footer>
-          <Link to={`/squad/${(item.squad || '').toUpperCase()}`} className="btn-primary" onClick={onClose}>
-            Abrir detalle del squad <IconArrow/>
-          </Link>
           <button className="btn-ghost dark">Compartir reporte</button>
         </footer>
       </aside>
