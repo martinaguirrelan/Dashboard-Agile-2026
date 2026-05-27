@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 import { getEpics, getProjects, getVps } from '../api/epics'
 import { getSyncStatus, triggerSync } from '../api/sync'
 import { useAuth } from '../context/AuthContext'
+import { useDarkMode } from '../hooks/useDarkMode'
 import dayjs from 'dayjs'
+import '../styles/dark-mode.css'
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -277,6 +279,7 @@ function InitiativesTable({ epics }) {
 
 export default function DashboardPage() {
   const { isAdmin, token } = useAuth()
+  const [isDark, toggleDarkMode] = useDarkMode()
   const [epics,    setEpics]    = useState([])
   const [projects, setProjects] = useState([])
   const [vps,      setVps]      = useState([])
@@ -375,6 +378,19 @@ export default function DashboardPage() {
         <InitiativesTable epics={filteredEpics} />
 
       </div>
+
+      {/* Dark Mode Toggle Button */}
+      <button
+        onClick={toggleDarkMode}
+        className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-primary text-white
+                   shadow-lg hover:shadow-xl transition-all flex items-center justify-center
+                   z-50 dark:bg-blue-600"
+        title={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+      >
+        <span className="material-symbols-outlined text-xl">
+          {isDark ? 'light_mode' : 'dark_mode'}
+        </span>
+      </button>
     </div>
   )
 }
