@@ -16,7 +16,80 @@ from app.services.capacity_sync_service import build_capacity_dashboard
 router = APIRouter(prefix="/capacity", tags=["capacity"])
 
 # ============ MOCK DATA (Temporary until Jira integration) ============
-# Load CSV data from project root for testing
+# Mock data for demo/testing when CSV is not available
+
+def get_mock_data(project_key: str) -> list:
+    """
+    Return mock data for testing when CSV is not available.
+    Used for Vercel deployment without CSV files.
+    """
+    return [
+        {
+            "Tipo de Incidencia": "Story",
+            "Clave de incidencia": f"{project_key}-101",
+            "Resumen": "Implementar autenticación de usuarios",
+            "Estimación original": "86400",  # 24h
+            "Estado": "Done",
+            "Persona asignada": "Cristhian Zapata",
+            "Clave principal": f"{project_key}-P1",
+            "Tipo de Iniciativa": "Feature",
+            "Sprint": "4",
+            "Start date": "2026-05-20",
+            "Fecha Done": "2026-05-25"
+        },
+        {
+            "Tipo de Incidencia": "Story",
+            "Clave de incidencia": f"{project_key}-102",
+            "Resumen": "Crear dashboard de capacidad",
+            "Estimación original": "129600",  # 36h
+            "Estado": "In Progress",
+            "Persona asignada": "Alessandra Nuñez",
+            "Clave principal": f"{project_key}-P1",
+            "Tipo de Iniciativa": "Feature",
+            "Sprint": "4",
+            "Start date": "2026-05-20",
+            "Fecha Done": None
+        },
+        {
+            "Tipo de Incidencia": "Task",
+            "Clave de incidencia": f"{project_key}-103",
+            "Resumen": "Documentar API",
+            "Estimación original": "28800",  # 8h
+            "Estado": "To Do",
+            "Persona asignada": "Junior Pezantes Silva",
+            "Clave principal": f"{project_key}-P1",
+            "Tipo de Iniciativa": "Feature",
+            "Sprint": "4",
+            "Start date": "2026-05-20",
+            "Fecha Done": None
+        },
+        {
+            "Tipo de Incidencia": "Story",
+            "Clave de incidencia": f"{project_key}-104",
+            "Resumen": "Integración con Jira",
+            "Estimación original": "172800",  # 48h
+            "Estado": "In Progress",
+            "Persona asignada": "Cristian Ycochea",
+            "Clave principal": f"{project_key}-P2",
+            "Tipo de Iniciativa": "Feature",
+            "Sprint": "4",
+            "Start date": "2026-05-20",
+            "Fecha Done": None
+        },
+        {
+            "Tipo de Incidencia": "Bug",
+            "Clave de incidencia": f"{project_key}-105",
+            "Resumen": "Corregir validación de fechas",
+            "Estimación original": "14400",  # 4h
+            "Estado": "Done",
+            "Persona asignada": "Luis Inga",
+            "Clave principal": f"{project_key}-P2",
+            "Tipo de Iniciativa": "Maintenance",
+            "Sprint": "4",
+            "Start date": "2026-05-20",
+            "Fecha Done": "2026-05-24"
+        },
+    ]
 
 def load_csv_data(project_key: str) -> list:
     """
@@ -134,11 +207,10 @@ async def get_squad_capacity(
     try:
         # Load CSV data (temporary)
         csv_data = load_csv_data(projectKey)
+
+        # Fallback to mock data if CSV not found
         if not csv_data:
-            raise HTTPException(
-                status_code=404,
-                detail=f"No data found for project {projectKey}. Please load CSV or sync from Jira.",
-            )
+            csv_data = get_mock_data(projectKey)
 
         # Get squad config
         squad_config = get_squad_config(projectKey)
