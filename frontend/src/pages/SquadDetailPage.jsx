@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getEpics, getProjects } from '../api/epics'
+import { CapacityKPIs } from '../components/squad/CapacityKPIs'
+import { TeamWorkload } from '../components/squad/TeamWorkload'
+import { BurndownChart } from '../components/squad/BurndownChart'
+import { SquadTabs } from '../components/squad/SquadTabs'
+import { SprintComparison } from '../components/squad/SprintComparison'
+import { IssuesTable } from '../components/squad/IssuesTable'
+import { mockSquadData } from '../data/squadMockData'
 import dayjs from 'dayjs'
 
 // ── Theme tokens ──────────────────────────────────────────────────────────────
@@ -118,6 +125,8 @@ export default function SquadDetailPage() {
   const [epics, setEpics]     = useState([])
   const [project, setProject] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [useCapacityView, setUseCapacityView] = useState(true)
+  const [squadData] = useState(mockSquadData) // TODO: Replace with API call
 
   useEffect(() => {
     Promise.all([
@@ -218,96 +227,200 @@ export default function SquadDetailPage() {
           <KpiCard label="LEAD TIME PROM."        value={avgLead != null ? `${avgLead}d` : '—'} sub="Días por épica" icon="schedule"   accent={T.blue}  />
         </div>
 
-        {/* ── SD-3 Initiatives Table ──────────────────────────────────────── */}
-        <DarkCard>
-          {/* Table header */}
-          <div style={{
-            padding: '16px 24px',
-            borderBottom: `1px solid ${T.border}`,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 20, color: T.blue }}>table_chart</span>
-              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', color: T.textSec, textTransform: 'uppercase' }}>
-                DETALLE DE INICIATIVAS
-              </span>
-            </div>
-            <span style={{ fontSize: 12, color: T.textMuted }}>{total} épicas</span>
-          </div>
+        {/* ── SD-3 Tabbed Content ─────────────────────────────────────────── */}
+        <SquadTabs
+          tabs={[
+            {
+              id: 'overview',
+              label: 'Overview',
+              content: (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  {/* KPIs from squadData */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+                    <KpiCard label="COMPLETADAS"           value={`${Math.round((squadData.overview.completedIssues / squadData.overview.totalIssues) * 100)}%`}  sub="De las iniciativas"   accent={T.green}  icon="task_alt"     />
+                    <KpiCard label="STORY POINTS HECHOS"   value={`${Math.round((squadData.overview.storyPointsCompleted / squadData.overview.totalStoryPoints) * 100)}%`}  sub="Puntos completados"     accent={T.blue}   icon="trending_up" />
+                    <KpiCard label="LEAD TIME PROMEDIO"    value={`${squadData.overview.avgLeadTimeDays}d`}   sub="Días por iniciativa"     accent={T.amber}  icon="schedule"    />
+                    <KpiCard label="MIEMBROS DEL EQUIPO"   value={squadData.team.length}   sub="Colaboradores activos"     accent={T.blue}   icon="group"       />
+                    <KpiCard label="PROGRESO SPRINT"       value={`${Math.round((squadData.sprints[squadData.sprints.length - 1].completedIssues / squadData.sprints[squadData.sprints.length - 1].totalIssues) * 100)}%`}   sub="Sprint actual"     accent={T.green}  icon="flash_on"    />
+                    <KpiCard label="EN BACKLOG"            value={squadData.overview.totalIssues - squadData.overview.completedIssues - squadData.overview.inProgress}   sub="Pendientes de iniciar"     accent={T.red}    icon="inbox"       />
+                  </div>
 
-          {total === 0 ? (
-            <div style={{ padding: 48, textAlign: 'center', color: T.textMuted }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 48, display: 'block', marginBottom: 12, opacity: 0.4 }}>inbox</span>
-              <p style={{ fontSize: 14 }}>No hay épicas para este squad.</p>
-            </div>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead>
-                  <tr style={{ background: '#0f1215' }}>
-                    {['KEY', 'NOMBRE', 'ESTADO', 'SPRINT INICIO', 'ESTIMACIÓN', 'FECHA PRD', 'SEMÁFORO'].map((col) => (
-                      <th key={col} style={{
-                        padding: '10px 20px',
-                        textAlign: 'left',
-                        fontSize: 11,
-                        fontWeight: 600,
-                        letterSpacing: '0.06em',
-                        color: T.textMuted,
-                        textTransform: 'uppercase',
-                        whiteSpace: 'nowrap',
-                      }}>
-                        {col}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {epics.map((epic) => {
-                    const sem = getSemaforo(epic)
-                    const semStyle = SEMAFORO_STYLE[sem]
-                    return (
-                      <tr
-                        key={epic.id}
-                        style={{
-                          borderTop: `1px solid ${T.border}`,
-                          borderLeft: `3px solid ${semStyle.border}`,
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = '#181c22' }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
-                      >
-                        <td style={{ padding: '12px 20px', color: T.blue, fontWeight: 700, whiteSpace: 'nowrap' }}>
-                          {epic.jira_issue_id || epic.project_key}
-                        </td>
-                        <td style={{ padding: '12px 20px', color: T.textPri, fontWeight: 500, maxWidth: 320 }}>
-                          <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                            {epic.epic_name}
-                          </span>
-                        </td>
-                        <td style={{ padding: '12px 20px', color: T.textSec, whiteSpace: 'nowrap' }}>
-                          {ESTADO_LABELS[epic.estado_normalizado] || epic.status || '—'}
-                        </td>
-                        <td style={{ padding: '12px 20px', color: T.textSec, whiteSpace: 'nowrap' }}>
-                          {epic.sprint_inicio || '—'}
-                        </td>
-                        <td style={{ padding: '12px 20px', color: T.textSec, whiteSpace: 'nowrap' }}>
-                          {epic.estimacion_inicial || '—'}
-                        </td>
-                        <td style={{ padding: '12px 20px', color: T.textSec, whiteSpace: 'nowrap' }}>
-                          {epic.fecha_prd ? dayjs(epic.fecha_prd).format('DD MMM YYYY') : '—'}
-                        </td>
-                        <td style={{ padding: '12px 20px' }}>
-                          <SemaforoBadge value={sem} />
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </DarkCard>
+                  {/* Initiatives Table */}
+                  <DarkCard>
+                    {/* Table header */}
+                    <div style={{
+                      padding: '16px 24px',
+                      borderBottom: `1px solid ${T.border}`,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 20, color: T.blue }}>table_chart</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', color: T.textSec, textTransform: 'uppercase' }}>
+                          DETALLE DE INICIATIVAS
+                        </span>
+                      </div>
+                      <span style={{ fontSize: 12, color: T.textMuted }}>{total} épicas</span>
+                    </div>
+
+                    {total === 0 ? (
+                      <div style={{ padding: 48, textAlign: 'center', color: T.textMuted }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 48, display: 'block', marginBottom: 12, opacity: 0.4 }}>inbox</span>
+                        <p style={{ fontSize: 14 }}>No hay épicas para este squad.</p>
+                      </div>
+                    ) : (
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                          <thead>
+                            <tr style={{ background: '#0f1215' }}>
+                              {['KEY', 'NOMBRE', 'ESTADO', 'SPRINT INICIO', 'ESTIMACIÓN', 'FECHA PRD', 'SEMÁFORO'].map((col) => (
+                                <th key={col} style={{
+                                  padding: '10px 20px',
+                                  textAlign: 'left',
+                                  fontSize: 11,
+                                  fontWeight: 600,
+                                  letterSpacing: '0.06em',
+                                  color: T.textMuted,
+                                  textTransform: 'uppercase',
+                                  whiteSpace: 'nowrap',
+                                }}>
+                                  {col}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {epics.map((epic) => {
+                              const sem = getSemaforo(epic)
+                              const semStyle = SEMAFORO_STYLE[sem]
+                              return (
+                                <tr
+                                  key={epic.id}
+                                  style={{
+                                    borderTop: `1px solid ${T.border}`,
+                                    borderLeft: `3px solid ${semStyle.border}`,
+                                  }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = '#181c22' }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                                >
+                                  <td style={{ padding: '12px 20px', color: T.blue, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                                    {epic.jira_issue_id || epic.project_key}
+                                  </td>
+                                  <td style={{ padding: '12px 20px', color: T.textPri, fontWeight: 500, maxWidth: 320 }}>
+                                    <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                      {epic.epic_name}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '12px 20px', color: T.textSec, whiteSpace: 'nowrap' }}>
+                                    {ESTADO_LABELS[epic.estado_normalizado] || epic.status || '—'}
+                                  </td>
+                                  <td style={{ padding: '12px 20px', color: T.textSec, whiteSpace: 'nowrap' }}>
+                                    {epic.sprint_inicio || '—'}
+                                  </td>
+                                  <td style={{ padding: '12px 20px', color: T.textSec, whiteSpace: 'nowrap' }}>
+                                    {epic.estimacion_inicial || '—'}
+                                  </td>
+                                  <td style={{ padding: '12px 20px', color: T.textSec, whiteSpace: 'nowrap' }}>
+                                    {epic.fecha_prd ? dayjs(epic.fecha_prd).format('DD MMM YYYY') : '—'}
+                                  </td>
+                                  <td style={{ padding: '12px 20px' }}>
+                                    <SemaforoBadge value={sem} />
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </DarkCard>
+                </div>
+              )
+            },
+            {
+              id: 'capacity',
+              label: 'Capacidad & Carga',
+              content: (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  <CapacityKPIs data={squadData} />
+                  <TeamWorkload teamMembers={squadData.team} />
+                </div>
+              )
+            },
+            {
+              id: 'sprints',
+              label: 'Timeline de Sprints',
+              content: (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  {squadData.sprints.map((sprint) => (
+                    <BurndownChart key={sprint.numero} sprint={sprint} />
+                  ))}
+                  <SprintComparison sprints={squadData.sprints} />
+                </div>
+              )
+            },
+            {
+              id: 'team',
+              label: 'Equipo & Asignación',
+              content: (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  <DarkCard style={{ padding: '24px' }}>
+                    <h2 style={{ fontSize: 16, fontWeight: 700, color: T.textPri, marginBottom: 24 }}>
+                      Detalles del Equipo
+                    </h2>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 16 }}>
+                      {squadData.team.map((member) => (
+                        <DarkCard key={member.id} style={{ padding: '16px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                            <div>
+                              <p style={{ fontSize: 14, fontWeight: 700, color: T.textPri }}>{member.name}</p>
+                              <p style={{ fontSize: 11, color: T.textSec, marginTop: 2 }}>{member.role}</p>
+                            </div>
+                            <span style={{
+                              display: 'inline-block',
+                              padding: '2px 8px',
+                              borderRadius: 4,
+                              background: member.utilization >= 85 ? T.redBg : member.utilization >= 75 ? T.amberBg : T.greenBg,
+                              color: member.utilization >= 85 ? T.red : member.utilization >= 75 ? T.amber : T.green,
+                              fontSize: 12,
+                              fontWeight: 600
+                            }}>
+                              {member.utilization}%
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12, color: T.textSec }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span>Story Points:</span>
+                              <span style={{ color: T.textPri, fontWeight: 600 }}>{member.completedPoints}/{member.storyPoints}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span>Issues:</span>
+                              <span style={{ color: T.textPri, fontWeight: 600 }}>{member.completedIssues}/{member.assignedIssues}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                              <span>Skills:</span>
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                                {member.skills.map((skill) => (
+                                  <span key={skill} style={{ background: T.border, padding: '2px 8px', borderRadius: 4, color: T.textMuted, fontSize: 11 }}>
+                                    {skill}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </DarkCard>
+                      ))}
+                    </div>
+                  </DarkCard>
+                </div>
+              )
+            }
+          ]}
+          onChange={(tabIndex) => {
+            console.log('Tab changed to:', tabIndex)
+          }}
+        />
 
       </div>
     </div>
