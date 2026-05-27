@@ -143,14 +143,24 @@ function FilterBar({ filters, onChange, vps, squads }) {
                       onChange={(v) => onChange({ squad: v })}/>
 
         {selectedSquad && (
-          <Link
-            to={`/squad/${selectedSquad.id.toUpperCase()}`}
-            className="btn-primary"
-            style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-            onClick={() => setOpenMobile(false)}
-          >
-            Detalle <IconArrow/>
-          </Link>
+          <>
+            <Link
+              to={`/squad/${selectedSquad.id.toUpperCase()}`}
+              className="btn-primary"
+              style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              onClick={() => setOpenMobile(false)}
+            >
+              Detalle <IconArrow/>
+            </Link>
+            <Link
+              to={`/capacity/${selectedSquad.id.toUpperCase()}`}
+              className="btn-primary"
+              style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              onClick={() => setOpenMobile(false)}
+            >
+              Capacidad <IconArrow/>
+            </Link>
+          </>
         )}
 
         <button className="btn-reset" onClick={() => onChange({ year: 2026, q: 2, vp: 'all', squad: 'all' })}>
