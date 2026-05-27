@@ -1,12 +1,12 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { getEpics, getProjects } from '../api/epics'
+import { getEpics, getProjects, getSprints } from '../api/epics'
 import { triggerSync } from '../api/sync'
 import { StatusPill, Delta, Sparkline, Progress, IconChevron, IconFilter, IconSearch, IconClose, IconArrow } from '../components/dashboard/DashUi'
 import { CANCELLATION_REASONS, CANCELLATION_IMPACTS } from '../components/dashboard/constants'
 import { LeadTimeChart, StatusDonut, VPLoadBars } from '../components/dashboard/DashCharts'
-import { buildVPs, buildSquads, adaptEpics, buildLeadTimeTrend } from '../components/dashboard/dataAdapter'
+import { buildVPs, buildSquads, adaptEpics, buildLeadTimeTrend, buildLeadTimeBySprit } from '../components/dashboard/dataAdapter'
 import '../dashboard.css'
 
 // ── Tweaks (local state + localStorage) ──────────────────────────────────────
@@ -757,6 +757,7 @@ export default function DashboardPage() {
   const [selected, setSelected] = useState(null)
   const [rawEpics, setRawEpics]     = useState([])
   const [projects, setProjects]     = useState([])
+  const [sprints, setSprints]       = useState([])
   const [loading, setLoading]       = useState(true)
   const [syncing, setSyncing]       = useState(false)
   const [lastUpdate, setLastUpdate] = useState(null)
@@ -766,9 +767,11 @@ export default function DashboardPage() {
     Promise.all([
       getEpics().catch(() => []),
       getProjects().catch(() => []),
-    ]).then(([epicsData, projectsData]) => {
+      getSprints().catch(() => []),
+    ]).then(([epicsData, projectsData, sprintsData]) => {
       setRawEpics(epicsData)
       setProjects(projectsData)
+      setSprints(sprintsData)
     }).then(() => {
       setLastUpdate(formatNow())
     }).finally(() => setLoading(false))
@@ -780,7 +783,7 @@ export default function DashboardPage() {
   const vps    = useMemo(() => buildVPs(projects), [projects])
   const squads = useMemo(() => buildSquads(projects, vps), [projects, vps])
   const allInitiatives = useMemo(() => adaptEpics(rawEpics, projects), [rawEpics, projects])
-  const trend  = useMemo(() => buildLeadTimeTrend(rawEpics), [rawEpics])
+  const trend  = useMemo(() => sprints.length > 0 ? buildLeadTimeBySprit(sprints) : buildLeadTimeTrend(rawEpics), [sprints, rawEpics])
 
   const onFilterChange = (patch) => setFilters((f) => ({ ...f, ...patch }))
 
@@ -798,9 +801,10 @@ export default function DashboardPage() {
     setSyncing(true)
     try {
       await triggerSync(token)
-      const [epicsData, projectsData] = await Promise.all([getEpics(), getProjects()])
+      const [epicsData, projectsData, sprintsData] = await Promise.all([getEpics(), getProjects(), getSprints()])
       setRawEpics(epicsData)
       setProjects(projectsData)
+      setSprints(sprintsData)
       setLastUpdate(formatNow())
     } finally {
       setSyncing(false)

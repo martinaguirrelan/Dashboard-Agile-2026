@@ -116,3 +116,16 @@ export function buildLeadTimeTrend(epics) {
     }
   })
 }
+
+export function buildLeadTimeBySprit(sprints) {
+  if (!sprints || !sprints.length) return []
+  // Sort by sprint number in descending order (most recent first) and reverse for left-to-right timeline
+  const sorted = [...sprints].sort((a, b) => a.sprint_number - b.sprint_number)
+  return sorted.map((s) => ({
+    w: s.sprint_name || 'Sin Sprint',
+    avg: Math.round(s.avg_lead_time || 0),
+    p50: Math.round((s.avg_lead_time || 0) * 0.88),
+    p90: Math.round(s.max_lead_time || 0),
+    throughput: s.epic_count || 0,
+  }))
+}

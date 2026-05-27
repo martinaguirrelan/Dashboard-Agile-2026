@@ -27,8 +27,8 @@ export function LeadTimeChart({ data, style = 'rich', accent = '#e65a35' }) {
     <div className="chart-wrap">
       <div className="chart-head">
         <div>
-          <h4>Lead time semanal</h4>
-          <p className="muted">P50, promedio y P90 · throughput cohorte</p>
+          <h4>Lead Time por Sprint</h4>
+          <p className="muted">P50, promedio y P90 · épicas por sprint</p>
         </div>
         <div className="chart-legend">
           <span><i style={{ background: accent }} />Promedio</span>

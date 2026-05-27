@@ -22,3 +22,8 @@ export async function getVps() {
   const { data } = await client.get('/epics/vps')
   return data
 }
+
+export async function getSprints() {
+  const { data } = await client.get('/epics/sprint-leadtime')
+  return data
+}
