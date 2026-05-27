@@ -37,6 +37,9 @@ function ProgressBar({ completed, total }) {
 export function ParentsSection({ parents = [] }) {
   const [expandedRows, setExpandedRows] = useState(new Set())
 
+  // Ensure parents is an array
+  const parentsArray = Array.isArray(parents) ? parents : []
+
   const toggleRow = (parentKey) => {
     const newSet = new Set(expandedRows)
     if (newSet.has(parentKey)) {
@@ -47,7 +50,7 @@ export function ParentsSection({ parents = [] }) {
     setExpandedRows(newSet)
   }
 
-  if (!parents || parents.length === 0) {
+  if (!parentsArray || parentsArray.length === 0) {
     return (
       <div style={{
         background: T.surface,
@@ -91,7 +94,7 @@ export function ParentsSection({ parents = [] }) {
           color: T.textSec,
           textTransform: 'uppercase',
         }}>
-          Iniciativas ({parents.length})
+          Iniciativas ({parentsArray.length})
         </span>
       </div>
 
@@ -125,7 +128,7 @@ export function ParentsSection({ parents = [] }) {
             </tr>
           </thead>
           <tbody>
-            {parents.map((parent, idx) => (
+            {parentsArray.map((parent, idx) => (
               <tr
                 key={parent.key || idx}
                 style={{
@@ -210,22 +213,22 @@ export function ParentsSection({ parents = [] }) {
       }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '18px', fontWeight: '700', color: T.blue }}>
-            {parents.length}
+            {parentsArray.length}
           </div>
           <div style={{ fontSize: '10px', color: T.textMuted, marginTop: '4px' }}>Total Iniciativas</div>
         </div>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '18px', fontWeight: '700', color: T.green }}>
             {Math.round(
-              parents.reduce((sum, p) => sum + (p.items_completados || 0), 0) /
-              Math.max(parents.reduce((sum, p) => sum + (p.items_totales || 0), 0), 1) * 100
+              parentsArray.reduce((sum, p) => sum + (p.items_completados || 0), 0) /
+              Math.max(parentsArray.reduce((sum, p) => sum + (p.items_totales || 0), 0), 1) * 100
             )}%
           </div>
           <div style={{ fontSize: '10px', color: T.textMuted, marginTop: '4px' }}>Progreso Promedio</div>
         </div>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '18px', fontWeight: '700', color: T.amber }}>
-            {parents.reduce((sum, p) => sum + parseInt(p.estimacion || '0'), 0)}h
+            {parentsArray.reduce((sum, p) => sum + parseInt(p.estimacion || '0'), 0)}h
           </div>
           <div style={{ fontSize: '10px', color: T.textMuted, marginTop: '4px' }}>Est. Total</div>
         </div>
