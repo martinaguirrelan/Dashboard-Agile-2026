@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models.jira_epic import ConfigProject, JiraEpic
+from ..models.jira_epic import ConfigProject, JiraEpic, Sprint
 from ..schemas.jira_epic import ConfigProjectOut, JiraEpicOut
 
 router = APIRouter(prefix="/epics", tags=["epics"])
@@ -57,6 +57,39 @@ def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(existing)
     return existing
+
+
+@router.get("/sprint-leadtime")
+def sprint_leadtime(db: Session = Depends(get_db)):
+    """Lead time aggregations por sprint"""
+    from sqlalchemy import func
+
+    results = db.query(
+        Sprint.sprint_name,
+        Sprint.numero,
+        func.avg(JiraEpic.lead_time_days).label("avg_lead_time"),
+        func.max(JiraEpic.lead_time_days).label("max_lead_time"),
+        func.count(JiraEpic.id).label("epic_count"),
+    ).outerjoin(
+        JiraEpic, JiraEpic.sprint_inicio == Sprint.sprint_name
+    ).filter(
+        Sprint.estado == "activo"
+    ).group_by(
+        Sprint.sprint_name, Sprint.numero
+    ).order_by(
+        Sprint.numero.desc()
+    ).limit(12).all()
+
+    return [
+        {
+            "sprint_name": r[0] or "Sin Sprint",
+            "sprint_number": r[1] or 0,
+            "avg_lead_time": round(r[2]) if r[2] else 0,
+            "max_lead_time": round(r[3]) if r[3] else 0,
+            "epic_count": r[4] or 0,
+        }
+        for r in results
+    ]
 
 
 @router.get("/", response_model=list[JiraEpicOut])
