@@ -79,7 +79,59 @@ function ProgressBar({ current, max, height = 6 }) {
   );
 }
 
-function Header({ squad, sprint, sprints, onSprintChange, loading }) {
+function Header({ squad, sprint, sprints, onSprintChange, loading, S }) {
+  if (!S) return null;
+  
+  const sprintInfo = S.sp;
+  const teamByRole = {};
+  S.team.forEach(member => {
+    const role = member.role.toLowerCase();
+    teamByRole[role] = (teamByRole[role] || 0) + 1;
+  });
+
+  return (
+    <div className="hdr">
+      <div className="hdr-titleblock">
+        <div className="hdr-eyebrow">
+          <span className="dot"></span>
+          SPRINT {sprint} · {fmtDate(sprintInfo.start)} – {fmtDate(sprintInfo.end)} · {sprintInfo.efectivos} DIAS EFECTIVOS
+        </div>
+        <h1 className="hdr-title">{squad?.squad || 'Squad'} · Capacity ejecutivo</h1>
+        <p className="hdr-sub">
+          {teamByRole.dev || 0} devs · {teamByRole.qa || 0} qa · {teamByRole.ux || 0} ux · {teamByRole.soporte || 0} soporte · {S.items?.length || 0} items · {S.parents?.length || 0} padres
+        </p>
+      </div>
+
+      <div className="hdr-meta">
+        <div className="sprint-selector">
+          <label className="sprint-selector-label">Sprint Actual</label>
+          <div className="sprint-selector-tabs">
+            {sprints.map((s) => (
+              <button
+                key={s.num}
+                className={`sprint-tab ${sprint === s.num ? 'active' : ''} ${s.num === 4 ? 'current' : ''}`}
+                onClick={() => onSprintChange(s.num)}
+                disabled={loading}
+              >
+                S{s.num}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Sprint progress bar */}
+      <div className="sprint-bar">
+        <span className="sprint-bar-label">SPRINT</span>
+        <div className="sprint-bar-track">
+          <div className="sprint-bar-fill" style={{ width: `${S.pctEsperado}%` }}></div>
+        </div>
+        <span className="sprint-bar-val">{S.diasTranscurridos}/{S.sp.efectivos} dias · {S.pctEsperado.toFixed(0)}% esperado</span>
+      </div>
+    </div>
+  );
+}
+) {
   return (
     <div className="hdr" style={{ marginBottom: '24px' }}>
       <div className="hdr-titleblock">
@@ -297,7 +349,7 @@ export default function CapacityDashboardPage() {
 
       <div style={{ maxWidth: '1480px', margin: '0 auto', padding: '28px 32px' }}>
         {/* Header */}
-        <Header squad={data.config} sprint={selectedSprint} sprints={sprints} onSprintChange={setSelectedSprint} loading={loading} />
+        <Header squad={data.config} sprint={selectedSprint} sprints={sprints} onSprintChange={setSelectedSprint} loading={loading} S={S} />
 
         {/* KPIs */}
         <KPIs S={S} />
