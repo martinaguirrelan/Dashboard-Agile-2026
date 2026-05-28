@@ -96,27 +96,21 @@ function Header({ squad, sprint, sprints, onSprintChange, loading }) {
           <label style={{ fontSize: '11px', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Sprint Actual
           </label>
-          <select
-            value={sprint || 4}
-            onChange={(e) => onSprintChange(parseInt(e.target.value))}
-            disabled={loading}
-            style={{
-              background: 'var(--surface)',
-              color: 'var(--text)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-sm)',
-              padding: '8px 12px',
-              fontSize: '14px',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-            }}
-          >
-            {sprints.map((s) => (
-              <option key={s.num} value={s.num}>
-                Sprint {s.num} {s.rango && `(${s.rango})`}
-              </option>
-            ))}
-          </select>
+          <div className="sprint-selector">
+            <label className="sprint-selector-label">Sprint Actual</label>
+            <div className="sprint-selector-tabs">
+              {sprints.map((s) => (
+                <button
+                  key={s.num}
+                  className={`sprint-tab ${sprint === s.num ? 'active' : ''} ${s.num === 4 ? 'current' : ''}`}
+                  onClick={() => onSprintChange(s.num)}
+                  disabled={loading}
+                >
+                  S{s.num}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
