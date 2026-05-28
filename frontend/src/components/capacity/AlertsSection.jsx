@@ -71,7 +71,10 @@ function AlertCard({ alert }) {
 }
 
 export function AlertsSection({ alerts = [] }) {
-  if (!alerts || alerts.length === 0) {
+  // Ensure alerts is an array
+  const alertsArray = Array.isArray(alerts) ? alerts : []
+
+  if (!alertsArray || alertsArray.length === 0) {
     return (
       <div style={{
         background: T.surface,
@@ -90,7 +93,7 @@ export function AlertsSection({ alerts = [] }) {
 
   // Group alerts by level
   const groupedAlerts = {}
-  alerts.forEach((alert) => {
+  alertsArray.forEach((alert) => {
     if (!groupedAlerts[alert.level]) {
       groupedAlerts[alert.level] = []
     }
@@ -128,7 +131,7 @@ export function AlertsSection({ alerts = [] }) {
           color: T.textSec,
           textTransform: 'uppercase',
         }}>
-          Alertas ({alerts.length})
+          Alertas ({alertsArray.length})
         </span>
       </div>
 

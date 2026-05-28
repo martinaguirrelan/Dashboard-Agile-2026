@@ -67,7 +67,10 @@ function getRoleLabel(role) {
 }
 
 export function CapacitySection({ team = [] }) {
-  if (!team || team.length === 0) {
+  // Ensure team is an array
+  const teamArray = Array.isArray(team) ? team : []
+
+  if (!teamArray || teamArray.length === 0) {
     return (
       <div style={{
         background: T.surface,
@@ -87,10 +90,10 @@ export function CapacitySection({ team = [] }) {
   }
 
   // Calculate team stats
-  const totalCapacity = team.reduce((sum, m) => sum + (m.estimacion || 0), 0)
-  const totalUsed = team.reduce((sum, m) => sum + (m.horas_usadas || 0), 0)
-  const avgUtilization = team.length > 0
-    ? Math.round(team.reduce((sum, m) => sum + (m.utilization || 0), 0) / team.length)
+  const totalCapacity = teamArray.reduce((sum, m) => sum + (m.estimacion || 0), 0)
+  const totalUsed = teamArray.reduce((sum, m) => sum + (m.horas_usadas || 0), 0)
+  const avgUtilization = teamArray.length > 0
+    ? Math.round(teamArray.reduce((sum, m) => sum + (m.utilization || 0), 0) / teamArray.length)
     : 0
 
   return (
@@ -118,14 +121,14 @@ export function CapacitySection({ team = [] }) {
           color: T.textSec,
           textTransform: 'uppercase',
         }}>
-          Distribución de Capacidad ({team.length})
+          Distribución de Capacidad ({teamArray.length})
         </span>
       </div>
 
       {/* Content */}
       <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {/* Team Members */}
-        {team.map((member) => (
+        {teamArray.map((member) => (
           <div key={member.id || member.nombre} style={{ borderBottom: `1px solid ${T.border}`, paddingBottom: '16px', fontSize: '13px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <div>
