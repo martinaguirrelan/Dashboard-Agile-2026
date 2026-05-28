@@ -84,17 +84,12 @@ body {
 /* ============ Header ============ */
 .hdr {
   display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding-bottom: 22px;
-  border-bottom: 1px solid var(--border-soft);
-  margin-bottom: 24px;
-}
-.hdr > div:first-child {
-  display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 32px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border-soft);
+  margin-bottom: 24px;
 }
 .hdr-titleblock { display: flex; flex-direction: column; gap: 6px; }
 .hdr-eyebrow {
