@@ -903,11 +903,10 @@ export default function CapacityDashboardPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <IniciativasCard S={S} />
             <ParentTypeCard S={S} />
+            <ItemsStatusSection S={S} />
           </div>
         </div>
 
-        {/* Items Status Section */}
-        <ItemsStatusSection S={S} />
 
         {/* Alerts Section */}
         <div style={{ marginBottom: '24px' }}>
