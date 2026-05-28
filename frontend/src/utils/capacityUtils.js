@@ -1,6 +1,18 @@
 // Capacity Dashboard Utilities — adapted from Claude Design template
 const HOURS_PER_DAY = 8;
 
+// Helper: Description for initiative types
+function descIniciativa(tipo) {
+  const descs = {
+    "Nuevas": "Nuevas iniciativas",
+    "Pedidos No Planificados": "Pedidos no previamente planeados",
+    "Habilitadores Estrategicos": "Habilitadores estratégicos",
+    "Ongoing": "Iniciativas continuas",
+    "Sin clasificar": "Sin clasificación",
+  };
+  return descs[tipo] || tipo;
+}
+
 export function secToH(sec) {
   return (sec || 0) / 3600;
 }
@@ -225,11 +237,58 @@ export function computeSprint(D, CFG, sprintNum, includeLT) {
   const alertOrder = { critico: 0, atraso: 1, revisar: 2, linea: 3, soporte: 4 };
   alertas.sort((a, b) => alertOrder[a.level] - alertOrder[b.level]);
 
+  // === Iniciativas distribution (over parents) ===
+  const iniBuckets = {
+    "Nuevas": 0,
+    "Pedidos No Planificados": 0,
+    "Habilitadores Estrategicos": 0,
+    "Ongoing": 0,
+    "Sin clasificar": 0,
+  };
+  filteredParents.forEach(p => {
+    const k = iniBuckets.hasOwnProperty(p.ini || "") ? p.ini : "Sin clasificar";
+    iniBuckets[k] = (iniBuckets[k] || 0) + 1;
+  });
+  const totalP = filteredParents.length || 1;
+  const iniciativas = Object.entries(iniBuckets)
+    .filter(([k, v]) => v > 0)
+    .map(([tipo, count]) => ({
+      tipo, count, pct: count / totalP * 100,
+      desc: descIniciativa(tipo),
+    }));
+
+  // === Parent type distribution ===
+  const tipoBuckets = {};
+  filteredParents.forEach(p => {
+    tipoBuckets[p.t] = (tipoBuckets[p.t] || 0) + 1;
+  });
+  const universoPadre = Object.entries(tipoBuckets)
+    .map(([tipo, count]) => ({ tipo, count, pct: count / totalP * 100 }))
+    .sort((a, b) => b.count - a.count);
+
+  // === Items status distribution ===
+  function statusSummary(arr) {
+    return {
+      total: arr.length,
+      done: arr.filter(i => i.s === "TERMINADO").length,
+      proc: arr.filter(i => i.s === "EN PROCESO" || i.s === "CERTIFICACION" || i.s === "GESTION DEL PASE" || i.s === "ANALISIS").length,
+      init: arr.filter(i => i.s === "POR INICIAR").length,
+      block: arr.filter(i => i.s === "BLOQUEADOS").length,
+      conEst: arr.filter(i => i.e && i.e > 0).length,
+      sinEst: arr.filter(i => !i.e || i.e === 0).length,
+    };
+  }
+  const universoItems = {
+    subtareas: statusSummary(filteredItems.filter(i => i.t === "Sub")),
+    bugs: statusSummary(filteredItems.filter(i => i.t === "Bug")),
+    total: statusSummary(filteredItems),
+  };
+
   return {
     sp, today, diasTranscurridos, pctEsperado,
     items: filteredItems, parents: filteredParents, team,
     avancePadres, avanceHoras,
     hTotalSec, hDoneSec, padresDone, padresTotal,
-    alertas,
+    alertas, iniciativas, universoPadre, universoItems,
   };
 }

@@ -325,7 +325,7 @@ body {
 
 .cap-days {
   font-family: var(--font-mono);
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 500;
   text-align: right;
   color: var(--text);
