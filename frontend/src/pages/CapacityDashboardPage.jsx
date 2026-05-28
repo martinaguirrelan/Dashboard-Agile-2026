@@ -141,7 +141,8 @@ export default function CapacityDashboardPage() {
           { params: { sprint: selectedSprint } }
         )
 
-        setData(response.data)
+        // API returns {data: {...}}, so extract the data wrapper
+        setData(response.data.data || response.data)
       } catch (err) {
         console.error('Error fetching capacity data:', err)
         setError(err.response?.data?.detail || 'Error al cargar los datos del dashboard')

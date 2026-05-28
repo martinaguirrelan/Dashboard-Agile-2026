@@ -304,7 +304,8 @@ def format_data_for_template(dashboard: Dict[str, Any], squad_config: Dict[str, 
         "config": { squad, sprints, roles, vacaciones, excluidos, ltPersona, notas, epicasExcluidas },
         "epics": [...],
         "parents": [...],
-        "items": [...]
+        "items": [...],
+        "computed": { team, alertas, ... }
     }
     """
     # Build complete config
@@ -327,6 +328,7 @@ def format_data_for_template(dashboard: Dict[str, Any], squad_config: Dict[str, 
         "epics": [],  # Will be populated from parents if needed
         "parents": dashboard.get("parents", []),
         "items": dashboard.get("items", []),
+        "computed": dashboard.get("computed", {}),  # Include computed metrics from dashboard
     }
 
 
