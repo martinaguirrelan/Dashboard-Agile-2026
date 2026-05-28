@@ -1749,3 +1749,28 @@ button.psb-pill.is-active {
   .parents-table { grid-template-columns: 80px 1fr 50px 90px 75px; }
   .parents-header > :nth-child(6), .parent-row > :nth-child(6) { display: none; }
 }
+
+/* Loading indicator for sprint changes */
+.sprint-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  letter-spacing: 0.3px;
+}
+
+.sprint-loading-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

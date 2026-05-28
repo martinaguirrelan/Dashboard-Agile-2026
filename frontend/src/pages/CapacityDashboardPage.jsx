@@ -121,6 +121,7 @@ function Header({ squad, sprint, sprints, onSprintChange, loading, S }) {
       <div className="hdr-meta">
         <div className="sprint-selector">
           <span className="sprint-selector-label">SPRINT</span>
+        {loading && <div className="sprint-loading"><div className="sprint-loading-spinner"></div><span>Cargando...</span></div>}
           <div className="sprint-selector-tabs">
             {sprints.map(n => (
               <button
