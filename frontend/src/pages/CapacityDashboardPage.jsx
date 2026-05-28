@@ -91,18 +91,18 @@ function Header({ squad, sprint, sprints, onSprintChange, loading, S }) {
 
   return (
     <div className="hdr">
-      <div className="hdr-titleblock">
-        <div className="hdr-eyebrow">
-          <span className="dot"></span>
-          SPRINT {sprint} · {fmtDate(sprintInfo.start)} – {fmtDate(sprintInfo.end)} · {sprintInfo.efectivos} DIAS EFECTIVOS
+      <div>
+        <div className="hdr-titleblock">
+          <div className="hdr-eyebrow">
+            <span className="dot"></span>
+            SPRINT {sprint} · {fmtDate(sprintInfo.start)} – {fmtDate(sprintInfo.end)} · {sprintInfo.efectivos} DIAS EFECTIVOS
+          </div>
+          <h1 className="hdr-title">{squad?.squad || 'Squad'} · Capacity ejecutivo</h1>
+          <p className="hdr-sub">
+            {teamByRole.dev || 0} devs · {teamByRole.qa || 0} qa · {teamByRole.ux || 0} ux · {teamByRole.soporte || 0} soporte · {S.items?.length || 0} items · {S.parents?.length || 0} padres
+          </p>
         </div>
-        <h1 className="hdr-title">{squad?.squad || 'Squad'} · Capacity ejecutivo</h1>
-        <p className="hdr-sub">
-          {teamByRole.dev || 0} devs · {teamByRole.qa || 0} qa · {teamByRole.ux || 0} ux · {teamByRole.soporte || 0} soporte · {S.items?.length || 0} items · {S.parents?.length || 0} padres
-        </p>
-      </div>
 
-      <div className="hdr-meta">
         <div className="sprint-selector">
           <label className="sprint-selector-label">Sprint Actual</label>
           <div className="sprint-selector-tabs">
