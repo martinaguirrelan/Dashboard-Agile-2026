@@ -92,13 +92,9 @@ function Header({ squad, sprint, sprints, onSprintChange, loading }) {
       </div>
 
       <div className="hdr-meta">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <label style={{ fontSize: '11px', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            Sprint Actual
-          </label>
-          <div className="sprint-selector">
-            <label className="sprint-selector-label">Sprint Actual</label>
-            <div className="sprint-selector-tabs">
+        <div className="sprint-selector">
+          <label className="sprint-selector-label">Sprint Actual</label>
+          <div className="sprint-selector-tabs">
               {sprints.map((s) => (
                 <button
                   key={s.num}
@@ -110,7 +106,6 @@ function Header({ squad, sprint, sprints, onSprintChange, loading }) {
                 </button>
               ))}
             </div>
-          </div>
         </div>
       </div>
     </div>
