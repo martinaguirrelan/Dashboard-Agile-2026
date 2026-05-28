@@ -62,7 +62,7 @@ function CapacityDashboardPage() {
   return (
     <div id="root">
       {/* Header */}
-      <Header sprint={S} onSprintChange={setSprint} sprints={sprints} />
+      <Header sprint={S} currentSprint={sprint} onSprintChange={setSprint} sprints={sprints} />
 
       {/* KPIs */}
       <div className="kpis">
@@ -125,7 +125,7 @@ function CapacityDashboardPage() {
   )
 }
 
-function Header({ sprint, onSprintChange, sprints }) {
+function Header({ sprint, currentSprint, onSprintChange, sprints }) {
   return (
     <div className="hdr">
       <div className="hdr-titleblock">
@@ -135,9 +135,9 @@ function Header({ sprint, onSprintChange, sprints }) {
         </div>
         <h1 className="hdr-title">Capacidad & Equipo</h1>
         <div className="hdr-sub">
-          <span>Sprint {sprint.sp?.num || '—'}</span>
+          <span>Sprint {currentSprint || '—'}</span>
           <span className="div">|</span>
-          <span>{sprint.pctEsperado}% avance esperado</span>
+          <span>{sprint?.pctEsperado || 0}% avance esperado</span>
         </div>
       </div>
 
@@ -147,7 +147,7 @@ function Header({ sprint, onSprintChange, sprints }) {
           {sprints.map((s) => (
             <button
               key={s.num}
-              className={`sprint-tab ${s.num === sprint.sp?.num ? 'active current' : ''}`}
+              className={`sprint-tab ${s.num === currentSprint ? 'active current' : ''}`}
               onClick={() => onSprintChange(s.num)}
             >
               {s.num}
