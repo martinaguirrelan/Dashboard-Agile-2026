@@ -2,58 +2,30 @@ import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getSquadCapacity, getSquadSprints } from '../api/capacity'
 import { computeSprint, fmtHours, fmtDate, shortName, initials, todayISO } from '../utils/capacityUtils'
-
-const T = {
-  bg: '#0b0d11',
-  surface: '#14171c',
-  border: '#1e2328',
-  textPri: '#e2e8f0',
-  textSec: '#8892a4',
-  textMuted: '#556070',
-  blue: '#3b82f6',
-  green: '#22c55e',
-  red: '#ef4444',
-  amber: '#f59e0b',
-}
+import '../styles/capacity-claude.css'
 
 function AlertBadge({ level }) {
-  const colors = {
-    critico: { bg: '#7f1d1d', text: '#fca5a5' },
-    atraso: { bg: '#7c2d12', text: '#fed7aa' },
-    revisar: { bg: '#1f2937', text: '#9ca3af' },
-    linea: { bg: '#065f46', text: '#a7f3d0' },
-    soporte: { bg: '#1f2937', text: '#d1d5db' },
+  const levelMap = {
+    critico: { class: 'danger', label: '🔴' },
+    atraso: { class: 'warning', label: '🟠' },
+    revisar: { class: 'warning', label: '🟡' },
+    linea: { class: 'success', label: '🟢' },
+    soporte: { class: 'info', label: '⚙️' },
   };
-  const color = colors[level] || colors.linea;
+  const config = levelMap[level] || levelMap.linea;
   return (
-    <span style={{
-      display: 'inline-block',
-      background: color.bg,
-      color: color.text,
-      padding: '2px 8px',
-      borderRadius: '3px',
-      fontSize: '11px',
-      fontWeight: '600',
-      textTransform: 'uppercase',
-      letterSpacing: '0.05em',
-    }}>
-      {level === 'critico' ? '🔴' : level === 'atraso' ? '🟠' : level === 'revisar' ? '🟡' : level === 'soporte' ? '⚙️' : '🟢'} {level}
+    <span className={`alert-title-badge ${level}`}>
+      {config.label} {level}
     </span>
   );
 }
 
 function Loading() {
   return (
-    <div style={{
-      background: T.bg,
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
-        <p style={{ color: T.textSec, fontSize: 14 }}>Cargando dashboard...</p>
+        <p style={{ color: 'var(--text-2)', fontSize: 14 }}>Cargando dashboard...</p>
       </div>
     </div>
   );
@@ -61,30 +33,16 @@ function Loading() {
 
 function ErrorState({ error, onRetry }) {
   return (
-    <div style={{
-      background: T.bg,
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '24px',
-    }}>
-      <div style={{
-        textAlign: 'center',
-        background: T.surface,
-        border: `1px solid ${T.border}`,
-        borderRadius: '10px',
-        padding: '40px',
-        maxWidth: '400px',
-      }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '24px' }}>
+      <div className="card" style={{ textAlign: 'center', maxWidth: '400px', padding: '40px' }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>❌</div>
-        <p style={{ fontSize: 14, color: T.textPri, marginBottom: 8 }}>Error al cargar</p>
-        <p style={{ fontSize: 12, color: T.textSec, marginBottom: 20 }}>{error}</p>
+        <p style={{ fontSize: 14, color: 'var(--text)', marginBottom: 8 }}>Error al cargar</p>
+        <p style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 20 }}>{error}</p>
         <button
           onClick={onRetry}
           style={{
             padding: '8px 16px',
-            background: T.blue,
+            background: 'var(--accent)',
             color: 'white',
             border: 'none',
             borderRadius: '6px',
@@ -102,10 +60,11 @@ function ErrorState({ error, onRetry }) {
 
 function ProgressBar({ current, max, height = 6 }) {
   const pct = max > 0 ? (current / max) * 100 : 0;
+  const barColor = pct >= 80 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
   return (
     <div style={{
       height,
-      background: T.border,
+      background: 'var(--border)',
       borderRadius: '3px',
       overflow: 'hidden',
       marginTop: 8,
@@ -113,7 +72,7 @@ function ProgressBar({ current, max, height = 6 }) {
       <div style={{
         height: '100%',
         width: `${pct}%`,
-        background: pct >= 80 ? T.green : pct >= 50 ? T.amber : T.red,
+        background: barColor,
         transition: 'width 0.3s',
       }} />
     </div>
@@ -122,34 +81,19 @@ function ProgressBar({ current, max, height = 6 }) {
 
 function Header({ squad, sprint, sprints, onSprintChange, loading }) {
   return (
-    <div style={{
-      background: T.surface,
-      borderBottom: `1px solid ${T.border}`,
-      padding: '24px',
-      marginBottom: '24px',
-    }}>
-      <div style={{
-        maxWidth: '1400px',
-        margin: '0 auto',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: '20px',
-      }}>
-        <div>
-          <p style={{ fontSize: '11px', color: T.textSec, textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.08em' }}>
-            CAPACITY DASHBOARD
-          </p>
-          <h1 style={{ fontSize: '32px', color: T.textPri, margin: 0, marginBottom: '8px', fontWeight: '700' }}>
-            {squad?.squad || 'Squad'}
-          </h1>
-          <p style={{ fontSize: '13px', color: T.textSec, margin: 0 }}>
-            Monitoreo de capacidad y utilización del equipo
-          </p>
+    <div className="hdr" style={{ marginBottom: '24px' }}>
+      <div className="hdr-titleblock">
+        <div className="hdr-eyebrow">
+          <span className="dot"></span>
+          CAPACITY DASHBOARD
         </div>
+        <h1 className="hdr-title">{squad?.squad || 'Squad'}</h1>
+        <p className="hdr-sub">Monitoreo de capacidad y utilización del equipo</p>
+      </div>
 
-        <div>
-          <label style={{ fontSize: '11px', color: T.textSec, textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>
+      <div className="hdr-meta">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <label style={{ fontSize: '11px', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Sprint Actual
           </label>
           <select
@@ -157,13 +101,14 @@ function Header({ squad, sprint, sprints, onSprintChange, loading }) {
             onChange={(e) => onSprintChange(parseInt(e.target.value))}
             disabled={loading}
             style={{
-              background: T.bg,
-              color: T.textPri,
-              border: `1px solid ${T.border}`,
-              borderRadius: '6px',
+              background: 'var(--surface)',
+              color: 'var(--text)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-sm)',
               padding: '8px 12px',
               fontSize: '14px',
               cursor: 'pointer',
+              fontFamily: 'inherit',
             }}
           >
             {sprints.map((s) => (
@@ -180,40 +125,23 @@ function Header({ squad, sprint, sprints, onSprintChange, loading }) {
 
 function KPIs({ S }) {
   const kpis = [
-    { label: 'Avance Padres', value: S?.avancePadres.toFixed(1), unit: '%', color: T.green },
-    { label: 'Avance Horas', value: S?.avanceHoras.toFixed(1), unit: '%', color: T.blue },
-    { label: 'Horas Esperadas', value: `${Math.round((S?.hTotalSec || 0) / 3600)}`, unit: 'h', color: T.amber },
-    { label: 'Items Cerrados', value: S?.padresDone, unit: `/${S?.padresTotal}`, color: T.green },
-    { label: 'Alertas Críticas', value: S?.alertas?.filter(a => a.level === 'critico').length || 0, unit: '', color: T.red },
+    { label: 'Avance Padres', value: S?.avancePadres.toFixed(1), unit: '%' },
+    { label: 'Avance Horas', value: S?.avanceHoras.toFixed(1), unit: '%' },
+    { label: 'Horas Esperadas', value: `${Math.round((S?.hTotalSec || 0) / 3600)}`, unit: 'h' },
+    { label: 'Items Cerrados', value: S?.padresDone, unit: `/${S?.padresTotal}` },
+    { label: 'Alertas Críticas', value: S?.alertas?.filter(a => a.level === 'critico').length || 0, unit: '' },
   ];
 
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-      gap: '16px',
-      marginBottom: '24px',
-      maxWidth: '1400px',
-      margin: '0 auto 24px',
-      padding: '0 24px',
-    }}>
+    <div className="kpis" style={{ marginBottom: '24px' }}>
       {kpis.map((kpi, i) => (
-        <div
-          key={i}
-          style={{
-            background: T.surface,
-            border: `1px solid ${T.border}`,
-            borderRadius: '10px',
-            padding: '20px',
-            borderLeft: `4px solid ${kpi.color}`,
-          }}
-        >
-          <p style={{ fontSize: '11px', color: T.textSec, textTransform: 'uppercase', margin: 0, marginBottom: '8px' }}>
+        <div key={i} className="kpi">
+          <div style={{ fontSize: '11px', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '8px' }}>
             {kpi.label}
-          </p>
-          <p style={{ fontSize: '28px', fontWeight: '700', color: kpi.color, margin: 0 }}>
+          </div>
+          <div style={{ fontSize: '28px', fontWeight: '700', color: 'var(--accent)' }}>
             {kpi.value || '0'}<span style={{ fontSize: '16px', marginLeft: '4px' }}>{kpi.unit}</span>
-          </p>
+          </div>
         </div>
       ))}
     </div>
@@ -221,38 +149,21 @@ function KPIs({ S }) {
 }
 
 function TeamCard({ member }) {
-  const getAlertColor = (level) => {
-    const colors = {
-      critico: T.red,
-      atraso: T.amber,
-      revisar: '#fbbf24',
-      linea: T.green,
-      soporte: T.textMuted,
-    };
-    return colors[level] || T.textMuted;
-  };
-
   return (
-    <div style={{
-      background: T.surface,
-      border: `1px solid ${T.border}`,
-      borderRadius: '8px',
-      padding: '16px',
-      marginBottom: '12px',
-    }}>
+    <div className="card" style={{ padding: '16px', marginBottom: '12px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
         <div>
-          <p style={{ fontSize: '14px', fontWeight: '600', color: T.textPri, margin: 0, marginBottom: '4px' }}>
+          <p style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)', margin: 0, marginBottom: '4px' }}>
             {shortName(member.name)}
           </p>
-          <p style={{ fontSize: '12px', color: T.textSec, margin: 0 }}>
+          <p style={{ fontSize: '12px', color: 'var(--text-2)', margin: 0 }}>
             {member.role.toUpperCase()} • {member.itemCount} items • {fmtHours(member.estTotalSec)}
           </p>
         </div>
         <AlertBadge level={member.alertaLevel} />
       </div>
       <ProgressBar current={member.pctReal} max={100} />
-      <div style={{ display: 'flex', gap: '16px', fontSize: '11px', color: T.textSec, marginTop: '8px' }}>
+      <div style={{ display: 'flex', gap: '16px', fontSize: '11px', color: 'var(--text-2)', marginTop: '8px' }}>
         <span>Avance: {member.pctReal.toFixed(0)}%</span>
         <span>Cap: {member.pctCap.toFixed(0)}%</span>
         <span>Vac: {member.vacImpact}d</span>
@@ -262,30 +173,24 @@ function TeamCard({ member }) {
 }
 
 function AlertCard({ alert }) {
+  const levelColorMap = {
+    critico: 'var(--danger)',
+    atraso: 'var(--warning)',
+    revisar: 'var(--warning)',
+    soporte: 'var(--text-3)',
+    linea: 'var(--success)',
+  };
+
   return (
-    <div style={{
-      background: T.surface,
-      border: `1px solid ${T.border}`,
-      borderRadius: '8px',
-      padding: '12px',
-      marginBottom: '8px',
-      borderLeft: `4px solid ${
-        alert.level === 'critico' ? T.red :
-        alert.level === 'atraso' ? T.amber :
-        alert.level === 'revisar' ? '#fbbf24' :
-        alert.level === 'soporte' ? T.textMuted :
-        T.green
-      }`,
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '4px' }}>
-        <p style={{ fontSize: '12px', fontWeight: '600', color: T.textPri, margin: 0 }}>
-          {alert.name}
-        </p>
+    <div className={`alert alert-${alert.level}`} style={{ marginBottom: '8px' }}>
+      <div className="alert-head">
+        <div className="alert-name">
+          <span className="avatar">{initials(alert.name)}</span>
+          <span>{shortName(alert.name)}</span>
+        </div>
         <AlertBadge level={alert.level} />
       </div>
-      <p style={{ fontSize: '12px', color: T.textSec, margin: 0, lineHeight: '1.4' }}>
-        {alert.text}
-      </p>
+      <div className="alert-text">{alert.text}</div>
     </div>
   );
 }
@@ -296,19 +201,13 @@ function ParentCard({ parent, items }) {
   const total = subs.length || 1;
 
   return (
-    <div style={{
-      background: T.surface,
-      border: `1px solid ${T.border}`,
-      borderRadius: '8px',
-      padding: '12px',
-      marginBottom: '8px',
-    }}>
+    <div className="card" style={{ padding: '12px', marginBottom: '8px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
         <div>
-          <p style={{ fontSize: '12px', fontWeight: '600', color: T.textPri, margin: 0 }}>
+          <p style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text)', margin: 0 }}>
             {parent.k}
           </p>
-          <p style={{ fontSize: '11px', color: T.textSec, margin: 0 }}>
+          <p style={{ fontSize: '11px', color: 'var(--text-2)', margin: 0 }}>
             {parent.r}
           </p>
         </div>
@@ -387,23 +286,18 @@ export default function CapacityDashboardPage() {
   if (!data || !S) return <ErrorState error="No hay datos disponibles" onRetry={() => setLoading(true)} />;
 
   const alertas = S.alertas || [];
-  const criticalAlerts = alertas.filter(a => a.level === 'critico');
 
   return (
-    <div style={{
-      background: T.bg,
-      minHeight: '100vh',
-      paddingBottom: '40px',
-    }}>
+    <div style={{ paddingBottom: '40px' }}>
       {/* Back link */}
-      <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: '12px 24px' }}>
+      <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '12px 24px' }}>
         <Link
           to="/"
           style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: '6px',
-            color: T.textSec,
+            color: 'var(--text-2)',
             fontSize: '13px',
             textDecoration: 'none',
           }}
@@ -412,20 +306,24 @@ export default function CapacityDashboardPage() {
         </Link>
       </div>
 
-      {/* Header */}
-      <Header squad={data.config} sprint={selectedSprint} sprints={sprints} onSprintChange={setSelectedSprint} loading={loading} />
+      <div style={{ maxWidth: '1480px', margin: '0 auto', padding: '28px 32px' }}>
+        {/* Header */}
+        <Header squad={data.config} sprint={selectedSprint} sprints={sprints} onSprintChange={setSelectedSprint} loading={loading} />
 
-      {/* KPIs */}
-      <KPIs S={S} />
+        {/* KPIs */}
+        <KPIs S={S} />
 
-      {/* Main content */}
-      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 24px' }}>
+        {/* Main content */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
           {/* Team Capacity */}
           <div>
-            <h2 style={{ fontSize: '14px', fontWeight: '700', color: T.textPri, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>
-              Distribución de Capacidad ({S.team?.length || 0})
-            </h2>
+            <div className="section-title">
+              <h2>Distribución de Capacidad</h2>
+              <span className="line"></span>
+              <span className="hint mono" style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                {S.team?.length || 0} personas
+              </span>
+            </div>
             <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
               {S.team?.map((member) => (
                 <TeamCard key={member.name} member={member} />
@@ -435,12 +333,16 @@ export default function CapacityDashboardPage() {
 
           {/* Alerts */}
           <div>
-            <h2 style={{ fontSize: '14px', fontWeight: '700', color: T.textPri, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>
-              Alertas ({alertas.length})
-            </h2>
+            <div className="section-title">
+              <h2>Alertas · acción recomendada</h2>
+              <span className="line"></span>
+              <span className="hint mono" style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                {alertas.length} personas
+              </span>
+            </div>
             <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
               {alertas.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 20px', color: T.textSec }}>
+                <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-2)' }}>
                   <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
                   <p>No hay alertas. El equipo está en línea.</p>
                 </div>
@@ -456,9 +358,13 @@ export default function CapacityDashboardPage() {
         {/* Parents */}
         {S.parents && S.parents.length > 0 && (
           <div style={{ marginBottom: '24px' }}>
-            <h2 style={{ fontSize: '14px', fontWeight: '700', color: T.textPri, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>
-              Iniciativas Trimestales ({S.parents.length})
-            </h2>
+            <div className="section-title">
+              <h2>Iniciativas padre — Progreso por subtareas</h2>
+              <span className="line"></span>
+              <span className="hint mono" style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                {S.parents.length} padres
+              </span>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
               {S.parents.map((parent) => (
                 <ParentCard key={parent.k} parent={parent} items={S.items} />
