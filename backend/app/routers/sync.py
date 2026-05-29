@@ -35,6 +35,74 @@ def trigger_full_sync():
     return run_sync(force_full_sync=True)
 
 
+@router.get("/jira-diagnostic")
+def jira_diagnostic():
+    """Diagnóstico completo de la conexión Jira — muestra config y prueba la API."""
+    import base64
+    base_url = settings.jira_base_url
+    email = settings.jira_user_email
+    token = settings.jira_api_token
+
+    config_ok = bool(email and token and base_url and "your-org" not in base_url)
+
+    result = {
+        "config": {
+            "jira_base_url": base_url,
+            "jira_user_email": email or "⚠️ NOT SET",
+            "jira_api_token": "✅ SET" if token else "⚠️ NOT SET",
+            "config_valid": config_ok,
+        },
+        "connection_test": None,
+        "issues_jql_test": None,
+    }
+
+    if not config_ok:
+        result["connection_test"] = {
+            "status": "skipped",
+            "reason": "Jira credentials not configured in environment variables",
+        }
+        return result
+
+    # Test 1: Conectar a Jira
+    try:
+        url = f"{base_url}/rest/api/3/myself"
+        with httpx.Client(headers=_headers(), timeout=10) as client:
+            resp = client.get(url)
+            result["connection_test"] = {
+                "status": "ok" if resp.status_code == 200 else "error",
+                "http_status": resp.status_code,
+                "account": resp.json().get("displayName", "unknown") if resp.status_code == 200 else resp.text[:200],
+            }
+    except Exception as e:
+        result["connection_test"] = {"status": "exception", "error": str(e)}
+
+    # Test 2: JQL de issues
+    try:
+        url = f"{base_url}/rest/api/3/search/jql"
+        jql = "project = SVI AND type in (Task, Bug, Story, Sub-task) ORDER BY updated DESC"
+        body = {"jql": jql, "maxResults": 3, "fields": ["summary", "status", "issuetype"]}
+        with httpx.Client(headers=_headers(), timeout=15) as client:
+            resp = client.post(url, json=body)
+            if resp.status_code == 200:
+                data = resp.json()
+                issues = data.get("issues", [])
+                result["issues_jql_test"] = {
+                    "status": "ok",
+                    "total_available": data.get("total", 0),
+                    "sample": [{"key": i["key"], "summary": i["fields"].get("summary")} for i in issues],
+                }
+            else:
+                result["issues_jql_test"] = {
+                    "status": "error",
+                    "http_status": resp.status_code,
+                    "response": resp.text[:300],
+                }
+    except Exception as e:
+        result["issues_jql_test"] = {"status": "exception", "error": str(e)}
+
+    return result
+
+
 @router.get("/debug-fields/{project_key}")
 def debug_jira_fields(project_key: str):
     """Devuelve el raw de los custom fields de sprint/estimación del primer epic del proyecto."""
