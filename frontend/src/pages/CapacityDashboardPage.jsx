@@ -1,15 +1,8 @@
-import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getSquadCapacity, getSquadSprints } from '../api/capacity'
 import { computeSprint, fmtHours, fmtDate, shortName, initials, todayISO } from '../utils/capacityUtils'
-import { useCache } from '../hooks/useCache'
-import { AlertsSkeleton, SectionSkeleton, QuarterlySkeleton } from '../components/SkeletonLoaders'
 import '../styles/capacity-claude.css'
-
-// Lazy load below-fold components for better initial performance
-const AlertsSection = lazy(() => import('../components/AlertsSection').then(m => ({ default: m.AlertsSection })))
-const ParentInitiativesSection = lazy(() => import('../components/ParentInitiativesSection').then(m => ({ default: m.ParentInitiativesSection })))
-const QuarterlySection = lazy(() => import('../components/QuarterlySection').then(m => ({ default: m.QuarterlySection })))
 
 const HOURS_PER_DAY = 8;
 
@@ -88,7 +81,7 @@ function ProgressBar({ current, max, height = 6 }) {
   );
 }
 
-function Header({ squad, sprint, sprints, onSprintChange, loading, S, onRefresh }) {
+function Header({ squad, sprint, sprints, onSprintChange, loading, S }) {
   if (!S) return null;
 
   const sp = S.sp;
@@ -134,32 +127,13 @@ function Header({ squad, sprint, sprints, onSprintChange, loading, S, onRefresh 
                 key={n.num}
                 className={`sprint-tab ${n.num === sprint ? 'active' : ''} ${n.num === 4 ? 'current' : ''}`}
                 onClick={() => onSprintChange(n.num)}
-                disabled={loading}
+                
               >
                 S{n.num}
               </button>
             ))}
           </div>
         </div>
-        <button
-          onClick={onRefresh}
-          disabled={loading}
-          title="Actualizar datos (limpia caché de 5 minutos)"
-          style={{
-            padding: '6px 12px',
-            background: 'var(--border)',
-            color: 'var(--text-2)',
-            border: 'none',
-            borderRadius: '4px',
-            fontSize: '12px',
-            fontWeight: '500',
-            cursor: loading ? 'default' : 'pointer',
-            opacity: loading ? 0.6 : 1,
-            transition: 'opacity 0.2s',
-          }}
-        >
-          {loading ? '⟳' : '🔄'} Actualizar
-        </button>
         <span className="hdr-pill">Cap. máx <b>{sp.capMaxDias}d · {sp.capMaxHoras}h</b></span>
       </div>
     </header>
@@ -767,7 +741,68 @@ function EpicDetailModal({ e, onClose }) {
   );
 }
 
-// QuarterlySection is now lazily loaded from components/QuarterlySection.jsx
+function QuarterlySection({ Q }) {
+  const [open, setOpen] = useState(null);
+  if (!Q || !Q.epics || Q.epics.length === 0) return null;
+
+  return (
+    <div className="card quarterly-card">
+      <div className="card-head">
+        <h3>Iniciativas trimestrales · Q2 2026 → 30/06</h3>
+        <div className="quarterly-counters">
+          <span className="qc-pill qc-init mono"><b>{Q.counters.porIniciar}</b> por iniciar</span>
+          <span className="qc-pill qc-proc mono"><b>{Q.counters.enProceso}</b> en proceso</span>
+          <span className="qc-pill qc-done mono"><b>{Q.counters.terminadas}</b> terminadas</span>
+        </div>
+      </div>
+      <div className="qtable">
+        <div className="qtable-header">
+          <span>KEY</span>
+          <span>TIPO</span>
+          <span>ESTADO</span>
+          <span>NOMBRE</span>
+          <span className="qth-bars">AVANCE REAL / ESPERADO</span>
+          <span>SEMÁFORO</span>
+        </div>
+        {Q.epics.map(e => (
+          <div
+            key={e.key}
+            className={`qrow lvl-${e.level}`}
+            onClick={() => setOpen(e)}
+          >
+            <span className="qrow-key mono">{e.key}</span>
+            <span className="qrow-ini">{e.iniciativa || '—'}</span>
+            <span className={`qrow-state state-${e.estado.toLowerCase().replace(/\s+/g,'-')}`}>{e.estado}</span>
+            <span className="qrow-name" title={e.nombre}>{e.nombre}</span>
+            <span className="qrow-bars">
+              <span className="qrow-bar-line">
+                <span className="qrow-bar-lbl">REAL</span>
+                <span className="qrow-bar-track">
+                  <span className={`qrow-bar-fill ${e.level}`} style={{ width: e.pctReal + '%' }}/>
+                </span>
+                <span className="qrow-bar-val mono">{e.pctReal.toFixed(0)}%</span>
+              </span>
+              <span className="qrow-bar-line">
+                <span className="qrow-bar-lbl">ESP</span>
+                <span className="qrow-bar-track">
+                  <span className="qrow-bar-fill exp" style={{ width: e.pctEsperado + '%' }}/>
+                </span>
+                <span className="qrow-bar-val mono">{e.pctEsperado.toFixed(0)}%</span>
+              </span>
+            </span>
+            <span className={`qrow-badge ${e.level}`}>
+              {e.level === 'linea' && 'ÓPTIMO'}
+              {e.level === 'medio' && 'DESV. MEDIA'}
+              {e.level === 'critico' && 'CRÍTICO'}
+              {e.level === 'vacio' && '—'}
+            </span>
+          </div>
+        ))}
+      </div>
+      {open && <EpicDetailModal e={open} onClose={() => setOpen(null)} />}
+    </div>
+  );
+}
 
 export default function CapacityDashboardPage() {
   const { projectKey } = useParams();
@@ -776,7 +811,6 @@ export default function CapacityDashboardPage() {
   const [selectedSprint, setSelectedSprint] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Fetch sprints
   useEffect(() => {
@@ -802,71 +836,18 @@ export default function CapacityDashboardPage() {
     }
   }, [projectKey]);
 
-  // Cache ref for managing sprint data with TTL (5 minutes)
-  const cacheRef = useRef(new Map());
-  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
-
-  // Check if cached data is still valid
-  const isCacheValid = (cachedData) => {
-    if (!cachedData) return false;
-    const age = Date.now() - cachedData.timestamp;
-    return age < CACHE_TTL;
-  };
-
-  // Manual refresh function - clears cache and forces refetch
-  const handleManualRefresh = () => {
-    if (projectKey && selectedSprint !== null) {
-      const cacheKey = `sprint-${projectKey}-${selectedSprint}`;
-      cacheRef.current.delete(cacheKey);
-      setRefreshTrigger(t => t + 1);
-    }
-  };
-
-  // Fetch dashboard data with caching
+  // Fetch dashboard data
   useEffect(() => {
     const fetchData = async () => {
       if (!projectKey || selectedSprint === null) {
         return;
       }
 
-      const cacheKey = `sprint-${projectKey}-${selectedSprint}`;
-      const cachedData = cacheRef.current.get(cacheKey);
-
-      // If we have valid cached data, use it immediately
-      if (isCacheValid(cachedData)) {
-        setData(cachedData.data);
-        setError(null);
-        setLoading(false);
-        // Still fetch fresh data in background silently
-        (async () => {
-          try {
-            const response = await getSquadCapacity(projectKey, selectedSprint);
-            cacheRef.current.set(cacheKey, {
-              data: response,
-              timestamp: Date.now(),
-            });
-            setData(response);
-          } catch (err) {
-            console.error('Background refresh error:', err);
-            // Don't interrupt user with background errors
-          }
-        })();
-        return;
-      }
-
-      // No valid cached data, show loading state
       setLoading(true);
       setError(null);
 
       try {
         const response = await getSquadCapacity(projectKey, selectedSprint);
-
-        // Store in cache with timestamp
-        cacheRef.current.set(cacheKey, {
-          data: response,
-          timestamp: Date.now(),
-        });
-
         setData(response);
       } catch (err) {
         console.error('Error fetching capacity data:', err);
@@ -878,7 +859,7 @@ export default function CapacityDashboardPage() {
 
     const timer = setTimeout(fetchData, 300);
     return () => clearTimeout(timer);
-  }, [projectKey, selectedSprint, refreshTrigger]);
+  }, [projectKey, selectedSprint]);
 
   // Compute sprint metrics
   const S = useMemo(() => {
@@ -910,7 +891,7 @@ export default function CapacityDashboardPage() {
   return (
     <>
         {/* Header */}
-        <Header squad={data.config} sprint={selectedSprint} sprints={sprints} onSprintChange={setSelectedSprint} loading={loading} S={S} onRefresh={handleManualRefresh} />
+        <Header squad={data.config} sprint={selectedSprint} sprints={sprints} onSprintChange={setSelectedSprint} loading={loading} S={S} />
 
         {/* KPIs */}
         <KPIs S={S} />
@@ -928,22 +909,49 @@ export default function CapacityDashboardPage() {
         </div>
 
 
-        {/* Alerts Section - Lazy loaded below fold */}
-        <Suspense fallback={<AlertsSkeleton />}>
-          <AlertsSection alertas={alertas} />
-        </Suspense>
+        {/* Alerts Section */}
+        <div style={{ marginBottom: '24px' }}>
+          <div className="section-title">
+            <h2>Alertas · acción recomendada</h2>
+            <span className="line"></span>
+            <span className="hint mono" style={{ fontSize: 11, color: 'var(--text-3)' }}>
+              {alertas.length} personas
+            </span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+            {alertas.length === 0 ? (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px 20px', color: 'var(--text-2)' }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
+                <p>No hay alertas. El equipo está en línea.</p>
+              </div>
+            ) : (
+              alertas.map((alert, i) => (
+                <AlertCard key={i} alert={alert} />
+              ))
+            )}
+          </div>
+        </div>
 
-        {/* Parents Section - Lazy loaded below fold */}
-        <Suspense fallback={<SectionSkeleton title="Iniciativas padre — Progreso por subtareas" itemCount={2} />}>
-          <ParentInitiativesSection S={S} />
-        </Suspense>
-
-        {/* Quarterly Section - Lazy loaded below fold */}
-        {Q && (
-          <Suspense fallback={<QuarterlySkeleton />}>
-            <QuarterlySection Q={Q} />
-          </Suspense>
+        {/* Parents */}
+        {S.parents && S.parents.length > 0 && (
+          <div style={{ marginBottom: '24px' }}>
+            <div className="section-title">
+              <h2>Iniciativas padre — Progreso por subtareas</h2>
+              <span className="line"></span>
+              <span className="hint mono" style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                {S.parents.length} padres
+              </span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
+              {S.parents.map((parent) => (
+                <ParentCard key={parent.k} parent={parent} items={S.items} />
+              ))}
+            </div>
+          </div>
         )}
+
+        {/* Quarterly Section */}
+        {Q && <QuarterlySection Q={Q} />}
     </>
   );
 }
