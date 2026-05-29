@@ -881,8 +881,9 @@ export default function CapacityDashboardPage() {
     };
   }, [data]);
 
-  if (loading) return <Loading />;
-  if (error) return <ErrorState error={error} onRetry={() => setLoading(true)} />;
+  // Show loading screen only on initial load, not on sprint changes
+  if (loading && !data) return <Loading />;
+  if (error && !data) return <ErrorState error={error} onRetry={() => setLoading(true)} />;
   if (!data || !S) return <ErrorState error="No hay datos disponibles" onRetry={() => setLoading(true)} />;
 
   const alertas = S.alertas || [];
