@@ -146,7 +146,7 @@ function FilterBar({ filters, onChange, vps, squads }) {
           <>
             <Link
               to={`/squad/${selectedSquad.id.toUpperCase()}`}
-              className="btn-primary"
+              className="btn-reset"
               style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
               onClick={() => setOpenMobile(false)}
             >
@@ -154,7 +154,7 @@ function FilterBar({ filters, onChange, vps, squads }) {
             </Link>
             <Link
               to={`/capacity/${selectedSquad.id.toUpperCase()}`}
-              className="btn-primary"
+              className="btn-reset"
               style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
               onClick={() => setOpenMobile(false)}
             >
