@@ -35,6 +35,23 @@ def trigger_full_sync():
     return run_sync(force_full_sync=True)
 
 
+@router.get("/issues/sprint-keys")
+def get_sprint_keys(project_key: str, db: Session = Depends(get_db)):
+    """Devuelve los sprint_keys distintos guardados en jira_issues para un proyecto."""
+    from ..models.jira_issue import JiraIssue as JiraIssueModel
+    from sqlalchemy import distinct, func
+    rows = db.query(
+        JiraIssueModel.sprint_key,
+        func.count(JiraIssueModel.id).label("count")
+    ).filter(
+        JiraIssueModel.project_key == project_key
+    ).group_by(JiraIssueModel.sprint_key).all()
+    return {
+        "project_key": project_key,
+        "sprint_keys": [{"sprint_key": r.sprint_key, "count": r.count} for r in rows]
+    }
+
+
 @router.get("/issues/test-insert")
 def test_single_insert(db: Session = Depends(get_db)):
     """Test inserting a single mock issue to diagnose DB errors."""
