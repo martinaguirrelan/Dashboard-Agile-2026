@@ -170,6 +170,7 @@ class JiraSyncService:
         total_upserted = 0
         total_errors = 0
 
+        first_error = None
         for issue in issues:
             try:
                 issue_data = JiraSyncService._parse_jira_issue(issue, project_key)
@@ -178,20 +179,25 @@ class JiraSyncService:
                 ).first()
 
                 if existing:
-                    for key, value in issue_data.dict(exclude_unset=True).items():
+                    for key, value in issue_data.model_dump(exclude_unset=True).items():
                         if value is not None:
                             setattr(existing, key, value)
                     existing.updated_at = datetime.now()
                     db.add(existing)
                 else:
-                    new_issue = JiraIssue(**issue_data.dict())
+                    new_issue = JiraIssue(**issue_data.model_dump())
                     db.add(new_issue)
 
                 total_upserted += 1
 
             except Exception as e:
-                logger.error(f"❌ Error processing issue {issue.get('key')}: {e}")
+                import traceback
+                err_msg = f"{type(e).__name__}: {e}"
+                if first_error is None:
+                    first_error = err_msg
+                logger.error(f"❌ Error processing issue {issue.get('key')}: {err_msg}\n{traceback.format_exc()}")
                 total_errors += 1
+                db.rollback()  # reset session after each error
                 continue
 
         try:
@@ -207,6 +213,7 @@ class JiraSyncService:
             "total_processed": total_processed,
             "total_upserted": total_upserted,
             "total_errors": total_errors,
+            "first_error": first_error,
         }
 
     @staticmethod
