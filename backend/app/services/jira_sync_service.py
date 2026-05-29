@@ -135,7 +135,7 @@ class JiraSyncService:
     ) -> tuple:
         """Fetch issues from Jira API"""
         jql = JiraSyncService.JQL_QUERY.format(project_key=project_key)
-        url = f"{settings.jira_base_url}/rest/api/3/search/jql"
+        url = f"{settings.jira_url}/rest/api/3/search/jql"
 
         params = {
             "jql": jql,
@@ -305,7 +305,7 @@ class JiraSyncService:
                 f"ORDER BY updated DESC"
             )
 
-            url = f"{settings.jira_base_url}/rest/api/3/search/jql"
+            url = f"{settings.jira_url}/rest/api/3/search/jql"
 
             params = {
                 "jql": jql,

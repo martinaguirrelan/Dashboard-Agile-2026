@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     jira_api_token: str = ""
     jira_user_email: str = ""
     jira_base_url: str = "https://your-org.atlassian.net"
+
+    @property
+    def jira_url(self) -> str:
+        """URL base sin trailing slash — usar esta en vez de jira_base_url directamente."""
+        return self.jira_base_url.rstrip("/")
     jira_field_start_date: str = "customfield_10015"  # campo "Start date" en Jira
     jira_field_quarter: str = "customfield_11302"       # campo "Priority Quarter" en Jira
     jira_field_sprint_inicio:     str = "customfield_11222"
