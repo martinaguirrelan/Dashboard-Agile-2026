@@ -1741,10 +1741,271 @@ button.psb-pill.is-active {
   font-style: italic;
 }
 
-@media (max-width: 1100px) {
+/* ========== RESPONSIVE DESIGN ========== */
+
+/* Tablet: 768px - 1024px */
+@media (max-width: 1024px) {
   .parents-table { grid-template-columns: 100px 1fr 60px 110px 85px 150px; }
+
+  /* Adjust main 2-column grid layout */
+  [style*="grid-template-columns: 'minmax(0, 1.62fr) minmax(0, 1fr)'"],
+  [style*="gridTemplateColumns: 'minmax(0, 1.62fr) minmax(0, 1fr)'"] {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.6fr) !important;
+  }
+
+  /* Header adjustments */
+  .hdr {
+    padding: 20px 24px;
+  }
+
+  .hdr-title {
+    font-size: 24px;
+    line-height: 1.2;
+  }
+
+  .hdr-sub {
+    font-size: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* KPI cards responsiveness */
+  .kpis {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  /* Reduce padding on smaller screens */
+  :root {
+    --radius: 8px;
+    --radius-sm: 5px;
+  }
 }
-@media (max-width: 800px) {
-  .parents-table { grid-template-columns: 80px 1fr 50px 90px 75px; }
-  .parents-header > :nth-child(6), .parent-row > :nth-child(6) { display: none; }
+
+/* Mobile: < 768px */
+@media (max-width: 768px) {
+  /* Full viewport padding */
+  body {
+    padding: 0;
+  }
+
+  /* Single column layout */
+  [style*="grid-template-columns: 'minmax(0, 1.62fr) minmax(0, 1fr)'"],
+  [style*="gridTemplateColumns: 'minmax(0, 1.62fr) minmax(0, 1fr)'"],
+  [style*="grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.6fr)"],
+  [style*="gridTemplateColumns: minmax(0, 1.4fr) minmax(0, 0.6fr)"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Header adjustments for mobile */
+  .hdr {
+    padding: 16px 16px;
+    gap: 16px;
+  }
+
+  .hdr-titleblock {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .hdr-title {
+    font-size: 20px;
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  .hdr-eyebrow {
+    font-size: 11px;
+  }
+
+  .hdr-sub {
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .hdr .div {
+    display: none;
+  }
+
+  /* Sprint bar responsiveness */
+  .sprint-bar {
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .sprint-bar-marks {
+    font-size: 11px;
+  }
+
+  /* Sprint selector adjustments */
+  .sprint-selector {
+    flex-shrink: 0;
+  }
+
+  .sprint-selector-tabs {
+    gap: 4px;
+  }
+
+  .sprint-tab {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  /* KPI cards single column on very small screens */
+  .kpis {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .kpi {
+    padding: 12px;
+  }
+
+  .kpi-label {
+    font-size: 10px;
+  }
+
+  .kpi-value {
+    font-size: 24px;
+  }
+
+  /* Card spacing */
+  .card {
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+
+  .card-head h3 {
+    font-size: 14px;
+    margin: 0 0 8px 0;
+  }
+
+  /* Section title adjustments */
+  .section-title {
+    margin-bottom: 12px;
+  }
+
+  .section-title h2 {
+    font-size: 14px;
+  }
+
+  .section-title .hint {
+    font-size: 10px;
+  }
+
+  /* Capacity section */
+  .cap-section {
+    max-height: none;
+  }
+
+  .cap-row {
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+
+  .cap-person {
+    width: 100%;
+  }
+
+  .cap-name {
+    font-size: 13px;
+  }
+
+  .cap-note {
+    font-size: 11px;
+  }
+
+  .cap-days,
+  .cap-progress,
+  .cap-items,
+  .cap-status,
+  .cap-parents {
+    display: none;
+  }
+
+  /* Hide some columns in tables on mobile */
+  .parents-table {
+    grid-template-columns: 80px 1fr 50px 90px 75px;
+  }
+
+  .parents-header > :nth-child(6),
+  .parent-row > :nth-child(6) {
+    display: none;
+  }
+
+  /* Chart and donut responsiveness */
+  .donut-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .donut-legend {
+    width: 100%;
+  }
+
+  /* Status grid for items */
+  [style*="display: grid"][style*="gridTemplateColumns: repeat"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Reduce max-height on mobile */
+  [style*="maxHeight: '600px'"] {
+    max-height: none !important;
+  }
+
+  /* Padding and spacing */
+  [style*="maxWidth: '1480px'"],
+  [style*="maxWidth: 1480px"] {
+    max-width: 100% !important;
+    padding: 12px 12px !important;
+  }
+
+  /* Font sizing */
+  :root {
+    --radius: 6px;
+    --radius-sm: 4px;
+  }
+}
+
+/* Extra small: < 480px */
+@media (max-width: 480px) {
+  .hdr {
+    padding: 12px 12px;
+  }
+
+  .hdr-title {
+    font-size: 18px;
+  }
+
+  .kpi-value {
+    font-size: 20px;
+  }
+
+  .kpis {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .card {
+    padding: 10px;
+    border-radius: 6px;
+  }
+
+  .section-title h2 {
+    font-size: 13px;
+  }
+
+  /* Stack all sections vertically */
+  [style*="gap: '24px'"],
+  [style*="gap: 24px"] {
+    gap: 12px !important;
+  }
 }
