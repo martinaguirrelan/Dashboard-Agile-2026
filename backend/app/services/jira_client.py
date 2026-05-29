@@ -187,7 +187,7 @@ async def fetch_epics_for_project_async(project_key: str) -> list[dict[str, Any]
     Versión parallelizable para sync.
     """
     jql = f'project = "{project_key}" AND issuetype = Epic ORDER BY created DESC'
-    url = f"{settings.jira_base_url}/rest/api/3/search/jql"
+    url = f"{settings.jira_url}/rest/api/3/search/jql"
     fields = [
         "summary",
         "description",
@@ -298,7 +298,7 @@ async def fetch_epics_since_async(project_key: str, since_timestamp: str) -> lis
     dt = datetime.fromisoformat(since_timestamp.replace('Z', '+00:00'))
     jira_date = dt.strftime("%Y-%m-%d")
     jql = f'project = "{project_key}" AND issuetype = Epic AND (created >= {jira_date} OR updated >= {jira_date}) ORDER BY updated DESC'
-    url = f"{settings.jira_base_url}/rest/api/3/search/jql"
+    url = f"{settings.jira_url}/rest/api/3/search/jql"
     fields = [
         "summary",
         "description",

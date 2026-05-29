@@ -39,7 +39,7 @@ def trigger_full_sync():
 def jira_diagnostic():
     """Diagnóstico completo de la conexión Jira — muestra config y prueba la API."""
     import base64
-    base_url = settings.jira_base_url
+    base_url = settings.jira_url
     email = settings.jira_user_email
     token = settings.jira_api_token
 
@@ -116,7 +116,7 @@ def debug_jira_fields(project_key: str):
         settings.jira_field_fecha_prd,
     ]
     jql = f'project = "{project_key}" AND issuetype = Epic ORDER BY created DESC'
-    url = f"{settings.jira_base_url}/rest/api/3/search/jql"
+    url = f"{settings.jira_url}/rest/api/3/search/jql"
     body = {"jql": jql, "maxResults": 3, "fields": target_fields + ["summary", "status"]}
     with httpx.Client(headers=_headers(), timeout=30) as client:
         resp = client.post(url, json=body)
