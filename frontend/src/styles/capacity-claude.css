@@ -3,7 +3,8 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 
-:root {
+/* Scoped to body.capacity-page to avoid leaking variables into other pages (e.g. portfolio dashboard) */
+body.capacity-page {
   --bg: #0b0d11;
   --surface: #14171c;
   --surface-2: #1a1e25;
@@ -33,9 +34,18 @@ html, body { margin: 0; padding: 0; }
 
   --font-sans: "Geist", "Söhne", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, "Menlo", monospace;
+
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.45;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-body.light {
+body.capacity-page.light {
   --bg: #f4f5f7;
   --surface: #ffffff;
   --surface-2: #fafbfc;
@@ -59,17 +69,6 @@ body.light {
   --info-bg: oklch(0.94 0.04 250);
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
   --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.10);
-}
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 1.45;
-  letter-spacing: -0.005em;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 .mono { font-family: var(--font-mono); font-feature-settings: "tnum" 1; }
@@ -1001,8 +1000,8 @@ body {
   background: #0b0d11;
   box-shadow: none;
 }
-body.light .sprint-tab.active { color: #fff; }
-body.light .sprint-tab.active.current::after { background: #fff; }
+body.capacity-page.light .sprint-tab.active { color: #fff; }
+body.capacity-page.light .sprint-tab.active.current::after { background: #fff; }
 
 /* ============ Role chip on capacity rows ============ */
 .role-chip {
@@ -1037,22 +1036,22 @@ body.light .sprint-tab.active.current::after { background: #fff; }
   color: var(--warning);
   border-color: oklch(0.42 0.07 82);
 }
-body.light .role-chip.role-dev {
+body.capacity-page.light .role-chip.role-dev {
   background: oklch(0.94 0.04 250);
   color: oklch(0.40 0.12 250);
   border-color: oklch(0.85 0.05 250);
 }
-body.light .role-chip.role-qa {
+body.capacity-page.light .role-chip.role-qa {
   background: oklch(0.95 0.04 280);
   color: oklch(0.45 0.13 280);
   border-color: oklch(0.85 0.06 280);
 }
-body.light .role-chip.role-ux {
+body.capacity-page.light .role-chip.role-ux {
   background: oklch(0.95 0.04 340);
   color: oklch(0.50 0.16 340);
   border-color: oklch(0.85 0.07 340);
 }
-body.light .role-chip.role-soporte {
+body.capacity-page.light .role-chip.role-soporte {
   background: oklch(0.95 0.06 82);
   color: oklch(0.45 0.13 82);
   border-color: oklch(0.85 0.08 82);
@@ -1278,10 +1277,10 @@ body.light .role-chip.role-soporte {
   color: oklch(0.82 0.10 200);
   border-color: oklch(0.42 0.07 200);
 }
-body.light .role-chip.role-lt {
+body.capacity-page.light .role-chip.role-lt {
   background: oklch(0.94 0.05 25); color: oklch(0.45 0.13 25); border-color: oklch(0.85 0.07 25);
 }
-body.light .role-chip.role-po {
+body.capacity-page.light .role-chip.role-po {
   background: oklch(0.94 0.04 200); color: oklch(0.40 0.10 200); border-color: oklch(0.85 0.05 200);
 }
 
@@ -1369,10 +1368,10 @@ body.light .role-chip.role-po {
 .qc-done b, .pss-done b, .psb-done b { color: oklch(0.92 0.14 150); }
 .psb-block b { color: oklch(0.92 0.14 25); }
 
-body.light .qc-init, body.light .pss-init, body.light .psb-init { background: oklch(0.95 0.03 250); color: oklch(0.40 0.13 250); border-color: oklch(0.85 0.05 250); }
-body.light .qc-proc, body.light .pss-proc, body.light .psb-proc { background: oklch(0.96 0.06 82); color: oklch(0.40 0.13 82); border-color: oklch(0.85 0.07 82); }
-body.light .qc-done, body.light .pss-done, body.light .psb-done { background: oklch(0.95 0.06 150); color: oklch(0.35 0.13 150); border-color: oklch(0.82 0.10 150); }
-body.light .psb-block { background: oklch(0.96 0.06 25); color: oklch(0.40 0.14 25); border-color: oklch(0.85 0.08 25); }
+body.capacity-page.light .qc-init, body.capacity-page.light .pss-init, body.capacity-page.light .psb-init { background: oklch(0.95 0.03 250); color: oklch(0.40 0.13 250); border-color: oklch(0.85 0.05 250); }
+body.capacity-page.light .qc-proc, body.capacity-page.light .pss-proc, body.capacity-page.light .psb-proc { background: oklch(0.96 0.06 82); color: oklch(0.40 0.13 82); border-color: oklch(0.85 0.07 82); }
+body.capacity-page.light .qc-done, body.capacity-page.light .pss-done, body.capacity-page.light .psb-done { background: oklch(0.95 0.06 150); color: oklch(0.35 0.13 150); border-color: oklch(0.82 0.10 150); }
+body.capacity-page.light .psb-block { background: oklch(0.96 0.06 25); color: oklch(0.40 0.14 25); border-color: oklch(0.85 0.08 25); }
 
 .parent-status-summary {
   display: flex; gap: 6px; flex-wrap: wrap;
