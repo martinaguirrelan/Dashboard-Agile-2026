@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone, timedelta
+import logging
 
 from ..config import settings
 from ..database import get_db
@@ -9,10 +10,17 @@ from ..schemas.jira_epic import SyncResultOut, SyncLogOut, SyncMetricOut
 from ..services.auth_service import require_admin
 from ..services.jira_client import _headers
 from ..services.sync_service import run_sync
+from ..services.jira_sync_service import JiraSyncService
+from ..schemas.jira_issue import JiraIssueSyncStats
 
 import httpx
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/sync", tags=["sync"])
+
+# Store last sync status for issues
+last_issues_sync_status: dict = {}
 
 
 @router.post("/run", response_model=SyncResultOut, dependencies=[Depends(require_admin)])
@@ -147,3 +155,127 @@ def get_sync_metrics(days: int = Query(7, ge=1, le=90), db: Session = Depends(ge
     since = (datetime.now(timezone.utc) - timedelta(days=days)).date()
     metrics = db.query(SyncMetric).filter(SyncMetric.date >= since).order_by(SyncMetric.date.desc()).all()
     return metrics
+
+
+# ============================================================================
+# JIRA ISSUES SYNC ENDPOINTS (for individual items/issues table)
+# ============================================================================
+
+@router.post("/issues/run")
+async def run_issues_full_sync(
+    project_key: str,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """Trigger a full sync of Jira issues (individual items) to Supabase"""
+    try:
+        logger.info(f"📋 Full issues sync requested for project: {project_key}")
+
+        background_tasks.add_task(
+            _run_issues_sync_background,
+            project_key,
+            db,
+            sync_type="full",
+        )
+
+        return {
+            "status": "queued",
+            "message": f"Full sync started for issues in project {project_key}",
+            "project_key": project_key,
+            "sync_type": "FULL",
+            "started_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+    except Exception as e:
+        logger.error(f"❌ Error starting issues sync: {e}")
+        return {"status": "error", "message": str(e)}, 500
+
+
+@router.post("/issues/diferencial")
+async def run_issues_differential_sync(
+    project_key: str,
+    hours: int = 1,
+    background_tasks: BackgroundTasks = None,
+    db: Session = Depends(get_db),
+):
+    """Trigger a differential sync of recently modified Jira issues"""
+    try:
+        logger.info(f"📋 Differential issues sync requested for project: {project_key}")
+
+        if background_tasks:
+            background_tasks.add_task(
+                _run_issues_sync_background,
+                project_key,
+                db,
+                sync_type="differential",
+                hours=hours,
+            )
+
+        return {
+            "status": "queued",
+            "message": f"Differential sync started for issues in project {project_key}",
+            "project_key": project_key,
+            "sync_type": "DIFERENCIAL",
+            "hours": hours,
+            "started_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+    except Exception as e:
+        logger.error(f"❌ Error starting issues sync: {e}")
+        return {"status": "error", "message": str(e)}, 500
+
+
+@router.get("/issues/status")
+async def get_issues_sync_status(project_key: str = None):
+    """Get status of the last issues sync"""
+    if not last_issues_sync_status:
+        return {
+            "status": "never_run",
+            "message": "No issues sync has been executed yet",
+        }
+
+    if project_key:
+        return last_issues_sync_status.get(project_key, {"status": "never_run"})
+
+    return last_issues_sync_status
+
+
+async def _run_issues_sync_background(
+    project_key: str,
+    db: Session,
+    sync_type: str = "full",
+    hours: int = 1,
+):
+    """Background task to run issues sync"""
+    global last_issues_sync_status
+
+    try:
+        if sync_type == "full":
+            result = await JiraSyncService.run_full_sync(db, project_key)
+        else:
+            result = await JiraSyncService.run_differential_sync(
+                db,
+                project_key,
+                hours=hours,
+            )
+
+        # Store status
+        last_issues_sync_status[project_key] = {
+            "status": result.get("status", "unknown"),
+            "total_processed": result.get("total_processed", 0),
+            "total_upserted": result.get("total_upserted", 0),
+            "total_errors": result.get("total_errors", 0),
+            "sync_type": result.get("sync_type", "UNKNOWN"),
+            "started_at": result.get("started_at"),
+            "completed_at": result.get("completed_at"),
+        }
+
+        logger.info(f"✅ Issues sync completed: {result}")
+
+    except Exception as e:
+        logger.error(f"❌ Issues sync failed: {e}")
+        last_issues_sync_status[project_key] = {
+            "status": "failed",
+            "error": str(e),
+            "completed_at": datetime.now(timezone.utc).isoformat(),
+        }
