@@ -1,9 +1,5 @@
-/* SVI Capacity Dashboard - executive theme */
-
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
-
-/* Scoped to body.capacity-page to avoid leaking variables into other pages (e.g. portfolio dashboard) */
+/* SVI Capacity Dashboard - tema oscuro
+   Sobreescribe los tokens globales de design-tokens.css para body.capacity-page */
 body.capacity-page {
   --bg: #0b0d11;
   --surface: #14171c;

@@ -1,0 +1,66 @@
+/*
+ * design-tokens.css — Token de diseño global
+ *
+ * Paleta base tomada del portfolio principal (Portafolio de Iniciativas).
+ * Tema claro por defecto. El capacity dashboard sobreescribe con body.capacity-page.
+ *
+ * Importado en main.jsx → aplica a TODA la app antes que cualquier otro CSS.
+ */
+
+:root {
+  /* ── Fondo y superficies ─────────────────────────── */
+  --bg:      #eaecf4;      /* Fondo principal: gris azulado claro  */
+  --surface: #ffffff;      /* Tarjetas, modales, paneles            */
+
+  /* ── Tinta (texto e iconos) ──────────────────────── */
+  --ink:    #1a2238;               /* Texto principal, headings             */
+  --ink-75: rgba(26,34,56,.80);    /* Texto secundario fuerte               */
+  --ink-60: rgba(26,34,56,.65);    /* Texto secundario normal               */
+  --ink-45: rgba(26,34,56,.50);    /* Texto terciario / placeholders        */
+  --ink-18: rgba(26,34,56,.18);    /* Bordes suaves, separadores            */
+  --ink-12: rgba(26,34,56,.12);    /* Fondos hover sutiles                  */
+  --ink-08: rgba(26,34,56,.08);    /* Fondos muy sutiles                    */
+
+  /* ── Acento ──────────────────────────────────────── */
+  --accent: #e65a35;               /* Naranja corporativo (CTA, highlights) */
+
+  /* ── Bordes y separadores ────────────────────────── */
+  --rule:   rgba(26,34,56,.10);    /* Líneas divisoras                      */
+  --border: rgba(26,34,56,.12);    /* Bordes de tarjetas                    */
+
+  /* ── Sombras ─────────────────────────────────────── */
+  --shadow-card: 0 1px 0 rgba(255,255,255,.7) inset,
+                 0 1px 2px rgba(26,34,56,.04),
+                 0 8px 24px -18px rgba(26,34,56,.22);
+  --shadow-sm:   0 1px 2px rgba(26,34,56,.08);
+  --shadow-md:   0 8px 24px rgba(26,34,56,.10);
+
+  /* ── Colores semánticos ──────────────────────────── */
+  --success:    #1f6b3a;
+  --success-bg: rgba(31,107,58,.08);
+  --warning:    #b45309;
+  --warning-bg: rgba(180,83,9,.08);
+  --danger:     #c0392b;
+  --danger-bg:  rgba(192,57,43,.08);
+  --info:       #2563eb;
+  --info-bg:    rgba(37,99,235,.08);
+
+  /* ── Tipografía ──────────────────────────────────── */
+  --font-sans: 'Fira Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+
+  /* ── Forma ───────────────────────────────────────── */
+  --radius:    8px;
+  --radius-sm: 5px;
+  --radius-lg: 12px;
+}
+
+/* Reset mínimo global */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
