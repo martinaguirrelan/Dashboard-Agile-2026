@@ -12,7 +12,7 @@ import json
 import os
 import logging
 
-from app.services.capacity_sync_service import build_capacity_dashboard
+from app.services.capacity_sync_service import build_capacity_dashboard, build_capacity_dashboard_from_issues
 from app.services.capacity_supabase_service import CapacitySupabaseService
 from app.database import get_db
 from sqlalchemy.orm import Session
@@ -372,7 +372,6 @@ async def get_squad_capacity(
                 sprint_key=sprint_key,
             )
             if supabase_issues:
-                from app.services.capacity_sync_service import build_capacity_dashboard_from_issues
                 dashboard = build_capacity_dashboard_from_issues(
                     project_key=projectKey,
                     sprint_num=sprint,

@@ -412,3 +412,47 @@ def build_capacity_dashboard(project_key: str, sprint_num: int, issues_data: Lis
         "items": [vars(i) for i in items],
         "computed": computed,
     }
+
+
+def build_capacity_dashboard_from_issues(
+    project_key: str,
+    sprint_num: int,
+    issues: List["JiraIssue"],
+    config_overrides: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    Build capacity dashboard from pre-parsed JiraIssue objects (e.g. from Supabase).
+    Skips CSV parsing — issues are already in JiraIssue format.
+    """
+    PARENT_TYPES = {"Spike", "Historia de Usuario", "Epic", "Task", "Story", "Feature"}
+    ITEM_TYPES = {"Sub", "Subtarea", "Bug", "Sub-task"}
+
+    parents = [i for i in issues if i.t in PARENT_TYPES]
+    items = [i for i in issues if i.t in ITEM_TYPES]
+
+    # If everything is items (no Sub-tasks), treat all as items
+    if not items and not parents:
+        items = issues
+    elif not items:
+        items = parents
+        parents = []
+
+    base_config = {
+        "sprint": sprint_num,
+        "sprints": build_sprint_config(),
+        "roles": {},
+        "vacaciones": {},
+        "excluidos": [],
+        "notas": {},
+    }
+    if config_overrides:
+        base_config.update(config_overrides)
+
+    computed = compute_sprint(sprint_num, items, parents, base_config)
+
+    return {
+        "config": base_config,
+        "parents": [vars(p) for p in parents],
+        "items": [vars(i) for i in items],
+        "computed": computed,
+    }
