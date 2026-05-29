@@ -35,6 +35,29 @@ def trigger_full_sync():
     return run_sync(force_full_sync=True)
 
 
+@router.get("/issues/test-insert")
+def test_single_insert(db: Session = Depends(get_db)):
+    """Test inserting a single mock issue to diagnose DB errors."""
+    import traceback, uuid
+    from ..models.jira_issue import JiraIssue
+    try:
+        mock = JiraIssue(
+            jira_issue_id=f"TEST-{uuid.uuid4().hex[:6]}",
+            project_key="TEST",
+            issue_type="Task",
+            summary="Test issue from diagnostic endpoint",
+        )
+        db.add(mock)
+        db.commit()
+        db.refresh(mock)
+        db.delete(mock)
+        db.commit()
+        return {"status": "ok", "message": "Insert and delete successful"}
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "error": str(e), "type": type(e).__name__, "traceback": traceback.format_exc()}
+
+
 @router.get("/jira-diagnostic")
 def jira_diagnostic():
     """Diagnóstico completo de la conexión Jira — muestra config y prueba la API."""
