@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getSquadCapacity, getSquadSprints } from '../api/capacity'
 import { computeSprint, fmtHours, fmtDate, shortName, initials, todayISO } from '../utils/capacityUtils'
+import { useCache } from '../hooks/useCache'
 import '../styles/capacity-claude.css'
 
 const HOURS_PER_DAY = 8;
@@ -81,7 +82,7 @@ function ProgressBar({ current, max, height = 6 }) {
   );
 }
 
-function Header({ squad, sprint, sprints, onSprintChange, loading, S }) {
+function Header({ squad, sprint, sprints, onSprintChange, loading, S, onRefresh }) {
   if (!S) return null;
 
   const sp = S.sp;
@@ -127,13 +128,32 @@ function Header({ squad, sprint, sprints, onSprintChange, loading, S }) {
                 key={n.num}
                 className={`sprint-tab ${n.num === sprint ? 'active' : ''} ${n.num === 4 ? 'current' : ''}`}
                 onClick={() => onSprintChange(n.num)}
-                
+                disabled={loading}
               >
                 S{n.num}
               </button>
             ))}
           </div>
         </div>
+        <button
+          onClick={onRefresh}
+          disabled={loading}
+          title="Actualizar datos (limpia caché de 5 minutos)"
+          style={{
+            padding: '6px 12px',
+            background: 'var(--border)',
+            color: 'var(--text-2)',
+            border: 'none',
+            borderRadius: '4px',
+            fontSize: '12px',
+            fontWeight: '500',
+            cursor: loading ? 'default' : 'pointer',
+            opacity: loading ? 0.6 : 1,
+            transition: 'opacity 0.2s',
+          }}
+        >
+          {loading ? '⟳' : '🔄'} Actualizar
+        </button>
         <span className="hdr-pill">Cap. máx <b>{sp.capMaxDias}d · {sp.capMaxHoras}h</b></span>
       </div>
     </header>
@@ -811,6 +831,7 @@ export default function CapacityDashboardPage() {
   const [selectedSprint, setSelectedSprint] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Aplica la clase capacity-page al body para scopear el CSS oscuro solo a esta página
   useEffect(() => {
@@ -842,18 +863,71 @@ export default function CapacityDashboardPage() {
     }
   }, [projectKey]);
 
-  // Fetch dashboard data
+  // Cache ref for managing sprint data with TTL (5 minutes)
+  const cacheRef = useRef(new Map());
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+  // Check if cached data is still valid
+  const isCacheValid = (cachedData) => {
+    if (!cachedData) return false;
+    const age = Date.now() - cachedData.timestamp;
+    return age < CACHE_TTL;
+  };
+
+  // Manual refresh function - clears cache and forces refetch
+  const handleManualRefresh = () => {
+    if (projectKey && selectedSprint !== null) {
+      const cacheKey = `sprint-${projectKey}-${selectedSprint}`;
+      cacheRef.current.delete(cacheKey);
+      setRefreshTrigger(t => t + 1);
+    }
+  };
+
+  // Fetch dashboard data with caching
   useEffect(() => {
     const fetchData = async () => {
       if (!projectKey || selectedSprint === null) {
         return;
       }
 
+      const cacheKey = `sprint-${projectKey}-${selectedSprint}`;
+      const cachedData = cacheRef.current.get(cacheKey);
+
+      // If we have valid cached data, use it immediately
+      if (isCacheValid(cachedData)) {
+        setData(cachedData.data);
+        setError(null);
+        setLoading(false);
+        // Still fetch fresh data in background silently
+        (async () => {
+          try {
+            const response = await getSquadCapacity(projectKey, selectedSprint);
+            cacheRef.current.set(cacheKey, {
+              data: response,
+              timestamp: Date.now(),
+            });
+            setData(response);
+          } catch (err) {
+            console.error('Background refresh error:', err);
+            // Don't interrupt user with background errors
+          }
+        })();
+        return;
+      }
+
+      // No valid cached data, show loading state
       setLoading(true);
       setError(null);
 
       try {
         const response = await getSquadCapacity(projectKey, selectedSprint);
+
+        // Store in cache with timestamp
+        cacheRef.current.set(cacheKey, {
+          data: response,
+          timestamp: Date.now(),
+        });
+
         setData(response);
       } catch (err) {
         console.error('Error fetching capacity data:', err);
@@ -865,7 +939,7 @@ export default function CapacityDashboardPage() {
 
     const timer = setTimeout(fetchData, 300);
     return () => clearTimeout(timer);
-  }, [projectKey, selectedSprint]);
+  }, [projectKey, selectedSprint, refreshTrigger]);
 
   // Compute sprint metrics
   const S = useMemo(() => {
@@ -897,7 +971,7 @@ export default function CapacityDashboardPage() {
   return (
     <>
         {/* Header */}
-        <Header squad={data.config} sprint={selectedSprint} sprints={sprints} onSprintChange={setSelectedSprint} loading={loading} S={S} />
+        <Header squad={data.config} sprint={selectedSprint} sprints={sprints} onSprintChange={setSelectedSprint} loading={loading} S={S} onRefresh={handleManualRefresh} />
 
         {/* KPIs */}
         <KPIs S={S} />
