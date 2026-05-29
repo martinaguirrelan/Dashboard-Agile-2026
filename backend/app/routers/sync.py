@@ -333,6 +333,7 @@ async def _run_issues_sync_background(
             "total_processed": result.get("total_processed", 0),
             "total_upserted": result.get("total_upserted", 0),
             "total_errors": result.get("total_errors", 0),
+            "first_error": result.get("first_error"),
             "sync_type": result.get("sync_type", "UNKNOWN"),
             "started_at": result.get("started_at"),
             "completed_at": result.get("completed_at"),
