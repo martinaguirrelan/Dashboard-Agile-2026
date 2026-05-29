@@ -204,7 +204,11 @@ class JiraSyncService:
             db.commit()
             logger.info(f"✅ Synced {total_upserted} issues to Supabase")
         except Exception as e:
-            logger.error(f"❌ Error committing to Supabase: {e}")
+            import traceback
+            commit_error = f"COMMIT {type(e).__name__}: {e}\n{traceback.format_exc()}"
+            logger.error(f"❌ Error committing to Supabase: {commit_error}")
+            if first_error is None:
+                first_error = commit_error
             db.rollback()
             total_errors += total_upserted
             total_upserted = 0
