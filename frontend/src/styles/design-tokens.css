@@ -54,7 +54,7 @@
 
   /* ── Tipografía ──────────────────────────────────── */
   --font-sans: 'Fira Sans', system-ui, -apple-system, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  --font-mono: 'IBM Plex Mono', 'Fira Sans', ui-monospace, monospace;
 
   /* ── Forma ───────────────────────────────────────── */
   --radius:    8px;
