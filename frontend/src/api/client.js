@@ -2,7 +2,12 @@ import axios from 'axios'
 
 const TOKEN_KEY = 'admin_token'
 
-const baseURL = import.meta.env.VITE_API_URL || '/api'
+// Normaliza VITE_API_URL para que siempre termine en /api
+// Soporta: "https://host.com", "https://host.com/", "https://host.com/api"
+const rawUrl = import.meta.env.VITE_API_URL
+const baseURL = rawUrl
+  ? (rawUrl.endsWith('/api') ? rawUrl : rawUrl.replace(/\/$/, '') + '/api')
+  : '/api'
 
 const client = axios.create({
   baseURL,
