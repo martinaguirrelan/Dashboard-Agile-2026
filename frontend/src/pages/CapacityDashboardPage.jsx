@@ -812,6 +812,12 @@ export default function CapacityDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Aplica la clase capacity-page al body para scopear el CSS oscuro solo a esta página
+  useEffect(() => {
+    document.body.classList.add('capacity-page');
+    return () => document.body.classList.remove('capacity-page');
+  }, []);
+
   // Fetch sprints
   useEffect(() => {
     const fetchSprints = async () => {
