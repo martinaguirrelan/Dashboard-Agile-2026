@@ -6,7 +6,7 @@ body.capacity-page {
   letter-spacing: -0.005em;
 }
 
-.mono { font-family: var(--font-mono); font-feature-settings: "tnum" 1; }
+.mono { font-family: var(--font-sans); font-feature-settings: "tnum" 1; }
 .tnum { font-feature-settings: "tnum" 1; }
 
 body.capacity-page #root {
@@ -27,7 +27,7 @@ body.capacity-page #root {
 }
 .hdr-titleblock { display: flex; flex-direction: column; gap: 6px; }
 .hdr-eyebrow {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -66,7 +66,7 @@ body.capacity-page #root {
   border-radius: 999px;
   font-size: 12px;
   color: var(--text-2);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
 }
 .hdr-pill b { color: var(--text); font-weight: 500; }
 
@@ -78,7 +78,7 @@ body.capacity-page #root {
   gap: 14px;
 }
 .sprint-bar-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -104,7 +104,7 @@ body.capacity-page #root {
 .sprint-bar-marks {
   display: flex;
   gap: 4px;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 600;
   color: var(--text-2);
@@ -130,7 +130,7 @@ body.capacity-page #root {
   overflow: hidden;
 }
 .kpi-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.10em;
@@ -218,7 +218,7 @@ body.capacity-page #root {
   color: var(--text);
 }
 .card-head .hint {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
   color: var(--text-3);
 }
@@ -246,7 +246,7 @@ body.capacity-page #root {
   width: 30px; height: 30px;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 600;
   background: var(--surface-3);
@@ -262,10 +262,10 @@ body.capacity-page #root {
 
 .cap-person { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .cap-name { font-weight: 500; color: var(--text); font-size: 14px; }
-.cap-note { font-size: 11px; color: var(--text-3); font-family: var(--font-mono); }
+.cap-note { font-size: 11px; color: var(--text-3); font-family: var(--font-sans); }
 
 .cap-days {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 500;
   text-align: right;
@@ -276,7 +276,7 @@ body.capacity-page #root {
 
 /* Progress dual track: expected (60%) vs real */
 .cap-progress { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.cap-progress-row { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; color: var(--text-3); }
+.cap-progress-row { display: flex; align-items: center; gap: 8px; font-family: var(--font-sans); font-size: 11px; color: var(--text-3); }
 .cap-progress-label { width: 26px; flex: 0 0 26px; }
 .cap-progress-track {
   position: relative;
@@ -310,7 +310,7 @@ body.capacity-page #root {
 }
 .cap-items-numbers {
   display: flex;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
   color: var(--text-2);
   gap: 8px;
@@ -340,7 +340,7 @@ body.capacity-page #root {
   gap: 6px;
   padding: 4px 9px;
   border-radius: 999px;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 10.5px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -356,7 +356,7 @@ body.capacity-page #root {
 .cap-badge.soporte { background: var(--info-bg); color: var(--info); border-color: var(--info); }
 
 .cap-desv {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
   color: var(--text-3);
 }
@@ -383,14 +383,14 @@ body.capacity-page #root {
   letter-spacing: 0.10em;
   text-transform: uppercase;
   color: var(--text-3);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   margin: 0 0 8px;
   font-weight: 500;
 }
 .cap-detail-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; }
 .cap-detail-stat { display: flex; flex-direction: column; gap: 2px; }
 .cap-detail-stat-label { font-size: 11px; color: var(--text-3); }
-.cap-detail-stat-value { font-family: var(--font-mono); font-size: 15px; color: var(--text); font-weight: 500; }
+.cap-detail-stat-value { font-family: var(--font-sans); font-size: 15px; color: var(--text); font-weight: 500; }
 
 .detail-items {
   display: flex;
@@ -412,16 +412,16 @@ body.capacity-page #root {
   font-size: 12px;
 }
 .detail-item:hover { background: var(--surface-2); }
-.detail-item .ticket { font-family: var(--font-mono); color: var(--accent); font-size: 11px; }
+.detail-item .ticket { font-family: var(--font-sans); color: var(--accent); font-size: 11px; }
 .detail-item .summary {
   color: var(--text-2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.detail-item .est { font-family: var(--font-mono); color: var(--text-3); text-align: right; font-size: 11px; }
+.detail-item .est { font-family: var(--font-sans); color: var(--text-3); text-align: right; font-size: 11px; }
 .detail-item .state-tag {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 9.5px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -454,8 +454,8 @@ body.capacity-page #root {
 }
 .legend-row .swatch { width: 10px; height: 10px; border-radius: 2px; }
 .legend-row .name { color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.legend-row .count { font-family: var(--font-mono); color: var(--text); font-weight: 500; font-size: 13px; }
-.legend-row .pct { font-family: var(--font-mono); color: var(--text-3); font-size: 11px; width: 50px; text-align: right; }
+.legend-row .count { font-family: var(--font-sans); color: var(--text); font-weight: 500; font-size: 13px; }
+.legend-row .pct { font-family: var(--font-sans); color: var(--text-3); font-size: 11px; width: 50px; text-align: right; }
 
 /* Stacked items status */
 .items-grid {
@@ -478,21 +478,21 @@ body.capacity-page #root {
 .items-stat.init { border-left-color: var(--text-3); }
 .items-stat.block { border-left-color: var(--danger); }
 .items-stat-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-3);
 }
 .items-stat-value {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 22px;
   font-weight: 500;
   color: var(--text);
   letter-spacing: -0.02em;
   line-height: 1;
 }
-.items-stat-sub { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-3); }
+.items-stat-sub { font-family: var(--font-sans); font-size: 10.5px; color: var(--text-3); }
 
 .items-bar {
   display: flex;
@@ -520,7 +520,7 @@ body.capacity-page #root {
   grid-template-columns: 70px 1fr auto auto;
   gap: 10px;
   align-items: center;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11.5px;
   color: var(--text-2);
 }
@@ -569,7 +569,7 @@ body.capacity-page #root {
 }
 .alert-name .avatar { width: 24px; height: 24px; font-size: 10px; }
 .alert-title-badge {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 10px;
   letter-spacing: 0.10em;
   text-transform: uppercase;
@@ -598,7 +598,7 @@ body.capacity-page #root {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-3);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
 }
 .section-title .line { flex: 1; height: 1px; background: var(--border-soft); }
 
@@ -613,7 +613,7 @@ body.capacity-page #root {
 }
 .parents-header > * {
   padding: 8px 10px;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 10.5px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -646,19 +646,19 @@ body.capacity-page #root {
   margin-right: 4px;
 }
 .parent-row.is-selected .parent-chevron { color: var(--accent); }
-.parent-row .parent-key { font-family: var(--font-mono); color: var(--accent); font-size: 11.5px; display: flex; align-items: center; }
+.parent-row .parent-key { font-family: var(--font-sans); color: var(--accent); font-size: 11.5px; display: flex; align-items: center; }
 .parent-row .parent-name {
   color: var(--text-2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.parent-row .parent-count { font-family: var(--font-mono); text-align: right; color: var(--text); }
+.parent-row .parent-count { font-family: var(--font-sans); text-align: right; color: var(--text); }
 .parent-row .parent-progress { display: flex; align-items: center; gap: 8px; }
 .parent-row .parent-progress-track { flex: 1; height: 6px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
 .parent-row .parent-progress-fill { height: 100%; background: var(--accent); border-radius: 999px; }
 .parent-row .parent-progress-fill.done { background: var(--success); }
-.parent-row .parent-progress-val { font-family: var(--font-mono); font-size: 11px; color: var(--text-3); width: 30px; text-align: right; }
+.parent-row .parent-progress-val { font-family: var(--font-sans); font-size: 11px; color: var(--text-3); width: 30px; text-align: right; }
 
 .parent-resp {
   display: flex;
@@ -674,7 +674,7 @@ body.capacity-page #root {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 10px;
   font-weight: 600;
   background: var(--surface-3);
@@ -695,7 +695,7 @@ body.capacity-page #root {
   white-space: nowrap;
 }
 .parent-resp-others {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 10px;
   color: var(--text-3);
 }
@@ -736,14 +736,14 @@ body.capacity-page #root {
   justify-self: end;
 }
 .pds-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 10px;
   letter-spacing: 0.10em;
   text-transform: uppercase;
   color: var(--text-3);
 }
 .pds-value {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 20px;
   font-weight: 500;
   color: var(--text);
@@ -772,14 +772,14 @@ body.capacity-page #root {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 9px;
   font-weight: 600;
   background: var(--surface-3);
   color: var(--text-2);
 }
 .pds-chip-count {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   color: var(--text);
   font-weight: 500;
 }
@@ -800,7 +800,7 @@ body.capacity-page #root {
 }
 .subs-header > * {
   padding: 8px 10px 8px;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -843,7 +843,7 @@ body.capacity-page #root {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 9px;
   font-weight: 600;
   background: var(--surface);
@@ -890,7 +890,7 @@ body.capacity-page #root {
   gap: 8px;
 }
 .sprint-selector-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 10px;
   letter-spacing: 0.10em;
   text-transform: uppercase;
@@ -908,7 +908,7 @@ body.capacity-page #root {
   background: transparent;
   border: 1px solid transparent;
   color: var(--text-2);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
   letter-spacing: 0.06em;
   padding: 5px 10px;
@@ -951,7 +951,7 @@ body.capacity-page.light .sprint-tab.active.current::after { background: #fff; }
   margin-left: 8px;
   padding: 1px 7px;
   border-radius: 4px;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 9px;
   letter-spacing: 0.08em;
   font-weight: 600;
@@ -1038,14 +1038,14 @@ body.capacity-page.light .role-chip.role-soporte {
   flex-wrap: wrap;
 }
 .qr-key {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
   color: var(--accent);
   letter-spacing: 0.04em;
   font-weight: 600;
 }
 .qr-tag {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 9.5px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1057,7 +1057,7 @@ body.capacity-page.light .role-chip.role-soporte {
 }
 .qr-badge {
   margin-left: auto;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 9.5px;
   letter-spacing: 0.08em;
   padding: 3px 8px;
@@ -1109,7 +1109,7 @@ body.capacity-page.light .role-chip.role-soporte {
   gap: 8px;
 }
 .qr-bar-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 9.5px;
   letter-spacing: 0.08em;
   color: var(--text-3);
@@ -1132,7 +1132,7 @@ body.capacity-page.light .role-chip.role-soporte {
 .qr-bar-fill.critico { background: var(--danger); }
 .qr-bar-fill.exp { background: var(--text-3); opacity: 0.6; }
 .qr-bar-val {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
   color: var(--text-2);
   text-align: right;
@@ -1151,13 +1151,13 @@ body.capacity-page.light .role-chip.role-soporte {
   flex-direction: column;
 }
 .qr-stat-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 9px;
   letter-spacing: 0.08em;
   color: var(--text-3);
 }
 .qr-stat-value {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 500;
   color: var(--text);
@@ -1340,7 +1340,7 @@ body.capacity-page.light .psb-block { background: oklch(0.96 0.06 25); color: ok
   display: inline-block;
 }
 .qr-state {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 9px;
   letter-spacing: 1px;
   padding: 2px 7px;
@@ -1446,7 +1446,7 @@ body.capacity-page.light .psb-block { background: oklch(0.96 0.06 25); color: ok
   text-overflow: ellipsis;
 }
 .qrow-state {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 9px;
   letter-spacing: 1px;
   padding: 2px 7px;
@@ -1478,7 +1478,7 @@ body.capacity-page.light .psb-block { background: oklch(0.96 0.06 25); color: ok
 }
 .qrow-bar-line.lg { grid-template-columns: 80px 1fr 60px; padding: 4px 0; }
 .qrow-bar-lbl {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 9px;
   letter-spacing: 1px;
   color: var(--text-3);
@@ -1510,7 +1510,7 @@ body.capacity-page.light .psb-block { background: oklch(0.96 0.06 25); color: ok
 }
 
 .qrow-badge {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 10px;
   letter-spacing: 1.2px;
   padding: 3px 8px;
@@ -1536,7 +1536,7 @@ body.capacity-page.light .psb-block { background: oklch(0.96 0.06 25); color: ok
 }
 .qdetail-stat { display: flex; flex-direction: column; gap: 4px; }
 .qdetail-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 9px;
   letter-spacing: 1.2px;
   color: var(--text-3);
@@ -1547,7 +1547,7 @@ body.capacity-page.light .psb-block { background: oklch(0.96 0.06 25); color: ok
 
 .qdetail-section { margin-top: 16px; }
 .qdetail-section-title {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 10px;
   letter-spacing: 1.5px;
   color: var(--text-3);
@@ -1568,7 +1568,7 @@ body.capacity-page.light .psb-block { background: oklch(0.96 0.06 25); color: ok
   border-radius: 8px;
 }
 .qhour-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 9px;
   letter-spacing: 1.2px;
   color: var(--text-3);
@@ -1632,7 +1632,7 @@ body.capacity-page.light .psb-block { background: oklch(0.96 0.06 25); color: ok
 button.psb-pill {
   appearance: none;
   cursor: pointer;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   transition: filter .12s, transform .08s, box-shadow .12s;
 }
 button.psb-pill:hover { filter: brightness(1.12); transform: translateY(-1px); }
@@ -1654,7 +1654,7 @@ button.psb-pill.is-active {
   color: var(--text-3);
   cursor: pointer;
   transition: color .12s, border-color .12s, background .12s;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   letter-spacing: 0.3px;
 }
 .psb-clear:hover {
@@ -1669,7 +1669,7 @@ button.psb-pill.is-active {
   align-self: center;
   text-align: center;
   font-size: 10px;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   letter-spacing: 0.8px;
   border-radius: 4px;
 }
