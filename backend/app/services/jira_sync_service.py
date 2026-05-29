@@ -82,14 +82,33 @@ class JiraSyncService:
         labels_str = ",".join(labels) if labels else None
         resolution = fields.get("resolution", {}).get("name") if fields.get("resolution") else None
 
+        # Sprint — customfield_10020 es el campo estándar de sprint en Jira Software
+        import re
+        sprint_key = None
+        sprint_field = fields.get("customfield_10020")
+        if sprint_field and isinstance(sprint_field, list) and sprint_field:
+            # Tomar el sprint más reciente (último)
+            sprint_obj = sprint_field[-1]
+            if isinstance(sprint_obj, dict):
+                sprint_name = sprint_obj.get("name", "")
+                # Extraer número: "Sprint 4", "SVI Sprint 4", "Sprint Q2-4" -> "4"
+                match = re.search(r'(\d+)\s*$', sprint_name.strip())
+                if match:
+                    sprint_key = f"{project_key}-Sprint-{match.group(1)}"
+
+        # Parent issue
+        parent = fields.get("parent")
+        parent_issue_key = parent.get("key") if parent else None
+        parent_summary = (parent.get("fields") or {}).get("summary") if parent else None
+
         return JiraIssueIn(
             jira_issue_id=key,
             project_key=project_key,
             project_name=None,
             issue_type=issue_type,
             summary=summary,
-            parent_issue_key=None,
-            parent_summary=None,
+            parent_issue_key=parent_issue_key,
+            parent_summary=parent_summary,
             assignee=assignee,
             assignee_id=assignee_id,
             story_points=None,
@@ -98,7 +117,7 @@ class JiraSyncService:
             start_date=start_date,
             due_date=due_date,
             fecha_done=fecha_done,
-            sprint_key=None,
+            sprint_key=sprint_key,
             priority=priority,
             labels=labels_str,
             tipo_iniciativa=None,
@@ -140,7 +159,7 @@ class JiraSyncService:
         params = {
             "jql": jql,
             "maxResults": max_results,
-            "fields": ["key", "issuetype", "summary", "assignee", "status", "priority", "labels", "duedate", "created", "updated", "resolution"]
+            "fields": ["key", "issuetype", "summary", "assignee", "status", "priority", "labels", "duedate", "created", "updated", "resolution", "customfield_10020", "parent"]
         }
         if start_at > 0:
             params["startAt"] = start_at
@@ -321,7 +340,7 @@ class JiraSyncService:
             params = {
                 "jql": jql,
                 "maxResults": 100,
-                "fields": ["key", "issuetype", "summary", "assignee", "status", "priority", "labels", "duedate", "created", "updated", "resolution"]
+                "fields": ["key", "issuetype", "summary", "assignee", "status", "priority", "labels", "duedate", "created", "updated", "resolution", "customfield_10020", "parent"]
             }
 
             async with httpx.AsyncClient(timeout=30.0) as client:
