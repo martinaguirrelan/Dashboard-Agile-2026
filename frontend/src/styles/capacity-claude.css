@@ -1,6 +1,7 @@
 /* SVI Capacity Dashboard — usa los tokens globales de design-tokens.css */
 body.capacity-page {
   font-size: 14px;
+  font-weight: 500;
   line-height: 1.45;
   letter-spacing: -0.005em;
 }
@@ -28,6 +29,7 @@ body.capacity-page #root {
 .hdr-eyebrow {
   font-family: var(--font-mono);
   font-size: 11px;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-3);
@@ -49,6 +51,7 @@ body.capacity-page #root {
   gap: 18px;
   color: var(--text-2);
   font-size: 13px;
+  font-weight: 600;
   margin-top: 2px;
 }
 .hdr-sub .div { color: var(--border); }
@@ -77,6 +80,7 @@ body.capacity-page #root {
 .sprint-bar-label {
   font-family: var(--font-mono);
   font-size: 11px;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-3);
@@ -102,6 +106,7 @@ body.capacity-page #root {
   gap: 4px;
   font-family: var(--font-mono);
   font-size: 11px;
+  font-weight: 600;
   color: var(--text-2);
 }
 .sprint-bar-marks b { color: var(--text); }
@@ -127,6 +132,7 @@ body.capacity-page #root {
 .kpi-label {
   font-family: var(--font-mono);
   font-size: 10.5px;
+  font-weight: 700;
   letter-spacing: 0.10em;
   text-transform: uppercase;
   color: var(--text-3);
@@ -142,6 +148,7 @@ body.capacity-page #root {
 }
 .kpi-sub {
   font-size: 12px;
+  font-weight: 600;
   color: var(--text-2);
   display: flex;
   align-items: center;
@@ -149,6 +156,7 @@ body.capacity-page #root {
 }
 .kpi-foot {
   font-size: 10.5px;
+  font-weight: 600;
   color: var(--text-3);
   margin-top: 2px;
   letter-spacing: 0.02em;
