@@ -6,12 +6,18 @@ GET /capacity/squad/{projectKey}
   - Returns: capacity dashboard data (template-compatible format)
 """
 
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, Depends
 from typing import Optional, Dict, Any
 import json
 import os
+import logging
 
 from app.services.capacity_sync_service import build_capacity_dashboard
+from app.services.capacity_supabase_service import CapacitySupabaseService
+from app.database import get_db
+from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/capacity", tags=["capacity"])
 
@@ -338,40 +344,65 @@ def format_data_for_template(dashboard: Dict[str, Any], squad_config: Dict[str, 
 async def get_squad_capacity(
     projectKey: str,
     sprint: Optional[int] = Query(None, description="Sprint number (default: current)"),
+    db: Session = Depends(get_db),
 ):
     """
     Get capacity dashboard for a squad (Template-compatible format)
 
-    Args:
-        projectKey: e.g. "SPI", "SVI"
-        sprint: Sprint number (optional, defaults to 4)
-
-    Returns:
-        {
-            data: {
-                config: { squad, currentSprint, sprints, ... },
-                epics: [...],
-                parents: [...],
-                items: [...]
-            }
-        }
+    Data source priority:
+    1. Supabase jira_issues table (synced from Jira)
+    2. CSV file (legacy)
+    3. Mock data (fallback)
     """
     try:
-        # Load CSV data (temporary)
-        csv_data = load_csv_data(projectKey)
-
-        # Fallback to mock data if CSV not found
-        if not csv_data:
-            csv_data = get_mock_data(projectKey)
-
-        # Get squad config
-        squad_config = get_squad_config(projectKey)
-
-        # Determine sprint (default to current from config)
+        # Determine sprint (default to 4)
         if sprint is None:
             sprint = 4
 
-        # Build dashboard
+        sprint_key = f"{projectKey}-Sprint-{sprint}"
+        squad_config = get_squad_config(projectKey)
+        issues_data = None
+        data_source = "unknown"
+
+        # 1. Try Supabase jira_issues
+        try:
+            supabase_issues = CapacitySupabaseService.get_issues_by_project_and_sprint(
+                db=db,
+                project_key=projectKey,
+                sprint_key=sprint_key,
+            )
+            if supabase_issues:
+                from app.services.capacity_sync_service import build_capacity_dashboard_from_issues
+                dashboard = build_capacity_dashboard_from_issues(
+                    project_key=projectKey,
+                    sprint_num=sprint,
+                    issues=supabase_issues,
+                    config_overrides={
+                        "squad": squad_config.get("squad", projectKey),
+                        "roles": squad_config.get("roles", {}),
+                        "vacaciones": squad_config.get("vacaciones", {}),
+                        "excluidos": squad_config.get("excluidos", []),
+                        "notas": squad_config.get("notas", {}),
+                    },
+                )
+                data_source = f"supabase ({len(supabase_issues)} issues)"
+                logger.info(f"✅ Loaded {len(supabase_issues)} issues from Supabase for {projectKey} sprint {sprint}")
+                response = format_data_for_template(dashboard, squad_config)
+                return {"data": response, "source": data_source}
+            else:
+                logger.warning(f"⚠️ No issues in Supabase for {projectKey} / {sprint_key} — falling back to CSV")
+        except Exception as e:
+            logger.error(f"⚠️ Supabase query failed: {e} — falling back to CSV")
+
+        # 2. Try CSV
+        csv_data = load_csv_data(projectKey)
+        if csv_data:
+            data_source = "csv"
+        else:
+            # 3. Mock fallback
+            csv_data = get_mock_data(projectKey)
+            data_source = "mock"
+
         dashboard = build_capacity_dashboard(
             project_key=projectKey,
             sprint_num=sprint,
@@ -387,7 +418,7 @@ async def get_squad_capacity(
 
         # Format for template consumption
         response = format_data_for_template(dashboard, squad_config)
-        return {"data": response}
+        return {"data": response, "source": data_source}
 
     except HTTPException:
         raise
