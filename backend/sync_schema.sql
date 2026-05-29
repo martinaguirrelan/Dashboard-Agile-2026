@@ -193,3 +193,70 @@ DROP TRIGGER IF EXISTS trg_sprints_updated_at ON sprints;
 CREATE TRIGGER trg_sprints_updated_at
     BEFORE UPDATE ON sprints
     FOR EACH ROW EXECUTE PROCEDURE _set_updated_at();
+
+-- =============================================================
+-- Tabla jira_issues — issues individuales (Tasks, Bugs, Stories)
+-- Agregada para Phase 3: Jira Sync Service
+-- =============================================================
+
+CREATE TABLE IF NOT EXISTS jira_issues (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    jira_issue_id    TEXT NOT NULL UNIQUE,       -- ej. "SVI-101"
+
+    -- Relaciones
+    project_key      TEXT NOT NULL,
+    project_name     TEXT,
+    parent_issue_key TEXT,                       -- Issue padre
+    parent_summary   TEXT,
+
+    -- Tipo y descripción
+    issue_type       TEXT NOT NULL,              -- Story, Bug, Task, Sub-task
+    summary          TEXT NOT NULL,
+    description      TEXT,
+
+    -- Asignación
+    assignee         TEXT,                       -- Nombre del responsable
+    assignee_id      TEXT,
+
+    -- Estimación
+    story_points     INTEGER,
+
+    -- Estado
+    estado           TEXT,                       -- EN PROCESO, TERMINADO, POR INICIAR, BLOQUEADOS
+    resolution       TEXT,
+
+    -- Fechas
+    start_date       DATE,
+    due_date         DATE,
+    fecha_done       DATE,
+
+    -- Sprint
+    sprint_key       TEXT,                       -- ej. "SVI-Sprint-4"
+
+    -- Prioridad y categorización
+    priority         TEXT,
+    labels           TEXT,                       -- separados por coma
+    tipo_iniciativa  TEXT,
+
+    -- Reporter
+    reporter         TEXT,
+    reporter_id      TEXT,
+
+    -- Metadata
+    created_at       TIMESTAMPTZ DEFAULT NOW(),
+    updated_at       TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Índices
+CREATE INDEX IF NOT EXISTS idx_jira_issues_project_key ON jira_issues(project_key);
+CREATE INDEX IF NOT EXISTS idx_jira_issues_sprint_key  ON jira_issues(sprint_key);
+CREATE INDEX IF NOT EXISTS idx_jira_issues_estado       ON jira_issues(estado);
+CREATE INDEX IF NOT EXISTS idx_jira_issues_assignee     ON jira_issues(assignee);
+CREATE INDEX IF NOT EXISTS idx_jira_issues_project_sprint
+    ON jira_issues(project_key, sprint_key);
+
+-- Trigger updated_at
+DROP TRIGGER IF EXISTS trg_jira_issues_updated_at ON jira_issues;
+CREATE TRIGGER trg_jira_issues_updated_at
+    BEFORE UPDATE ON jira_issues
+    FOR EACH ROW EXECUTE PROCEDURE _set_updated_at();
