@@ -156,22 +156,24 @@ class JiraSyncService:
         jql = JiraSyncService.JQL_QUERY.format(project_key=project_key)
         url = f"{settings.jira_url}/rest/api/3/search/jql"
 
-        params = {
+        body = {
             "jql": jql,
             "maxResults": max_results,
             "fields": ["key", "issuetype", "summary", "assignee", "status", "priority",
                        "labels", "duedate", "created", "updated", "resolution",
                        "customfield_10020", "parent"]
         }
-        # cursor-based pagination — solo incluir si hay token de página siguiente
+        # nextPageToken va como query param (no en el body) — Jira API v3
+        query_params = {}
         if next_page_token:
-            params["nextPageToken"] = next_page_token
+            query_params["nextPageToken"] = next_page_token
 
         async with httpx.AsyncClient(timeout=30.0) as client:
             try:
                 response = await client.post(
                     url,
-                    json=params,
+                    json=body,
+                    params=query_params,
                     headers=JiraSyncService._get_jira_headers(),
                 )
                 response.raise_for_status()
