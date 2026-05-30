@@ -364,19 +364,24 @@ async def get_issues_sync_status(project_key: str = None):
 
 async def _run_issues_sync_background(
     project_key: str,
-    db: Session,
+    db: Session,  # mantenido por compatibilidad pero NO se usa — crea sesión propia
     sync_type: str = "full",
     hours: int = 1,
 ):
-    """Background task to run issues sync"""
+    """Background task to run issues sync.
+    Crea su propia sesión de BD porque la del request ya estará cerrada
+    cuando FastAPI ejecute este background task.
+    """
+    from ..database import SessionLocal
     global last_issues_sync_status
 
+    bg_db = SessionLocal()
     try:
         if sync_type == "full":
-            result = await JiraSyncService.run_full_sync(db, project_key)
+            result = await JiraSyncService.run_full_sync(bg_db, project_key)
         else:
             result = await JiraSyncService.run_differential_sync(
-                db,
+                bg_db,
                 project_key,
                 hours=hours,
             )
@@ -396,9 +401,14 @@ async def _run_issues_sync_background(
         logger.info(f"✅ Issues sync completed: {result}")
 
     except Exception as e:
-        logger.error(f"❌ Issues sync failed: {e}")
+        import traceback
+        err = f"{type(e).__name__}: {e}\n{traceback.format_exc()}"
+        logger.error(f"❌ Issues sync failed: {err}")
         last_issues_sync_status[project_key] = {
             "status": "failed",
-            "error": str(e),
+            "first_error": err,
+            "error": err,
             "completed_at": datetime.now(timezone.utc).isoformat(),
         }
+    finally:
+        bg_db.close()
