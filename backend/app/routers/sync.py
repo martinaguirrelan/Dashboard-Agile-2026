@@ -35,6 +35,20 @@ def trigger_full_sync():
     return run_sync(force_full_sync=True)
 
 
+@router.get("/issues/types")
+def get_issue_types(project_key: str, sprint_key: str = None, db: Session = Depends(get_db)):
+    """Devuelve los issue_types distintos en jira_issues para un proyecto/sprint."""
+    from ..models.jira_issue import JiraIssue as JiraIssueModel
+    from sqlalchemy import func
+    q = db.query(JiraIssueModel.issue_type, func.count(JiraIssueModel.id).label("count")).filter(
+        JiraIssueModel.project_key == project_key
+    )
+    if sprint_key:
+        q = q.filter(JiraIssueModel.sprint_key == sprint_key)
+    rows = q.group_by(JiraIssueModel.issue_type).all()
+    return {"project_key": project_key, "sprint_key": sprint_key, "types": [{"type": r.issue_type, "count": r.count} for r in rows]}
+
+
 @router.get("/issues/sprint-keys")
 def get_sprint_keys(project_key: str, db: Session = Depends(get_db)):
     """Devuelve los sprint_keys distintos guardados en jira_issues para un proyecto."""
