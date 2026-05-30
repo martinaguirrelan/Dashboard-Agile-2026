@@ -173,7 +173,11 @@ class JiraSyncService:
                 )
                 response.raise_for_status()
                 data = response.json()
-                return data.get("issues", []), data.get("total", 0)
+                issues = data.get("issues", [])
+                # Jira API v3 usa "isLast" para paginación; "total" puede ser 0
+                is_last = data.get("isLast", True)
+                total = data.get("total", len(issues))
+                return issues, is_last, total
             except httpx.HTTPError as e:
                 logger.error(f"❌ Jira API error: {e}")
                 raise
@@ -257,7 +261,7 @@ class JiraSyncService:
             max_results = 50
 
             while True:
-                issues, total = await JiraSyncService.fetch_jira_issues(
+                issues, is_last, total = await JiraSyncService.fetch_jira_issues(
                     project_key,
                     start_at=start_at,
                     max_results=max_results,
@@ -276,7 +280,9 @@ class JiraSyncService:
                 total_upserted += result["total_upserted"]
                 total_errors += result["total_errors"]
 
-                if start_at + max_results >= total:
+                logger.info(f"  📄 Página {start_at//max_results + 1}: {len(issues)} issues (isLast={is_last})")
+
+                if is_last or not issues:
                     break
 
                 start_at += max_results
