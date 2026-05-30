@@ -423,19 +423,19 @@ def build_capacity_dashboard_from_issues(
     """
     Build capacity dashboard from pre-parsed JiraIssue objects (e.g. from Supabase).
     Skips CSV parsing — issues are already in JiraIssue format.
+
+    Clasificación:
+    - Parents: Story / Historia de Usuario / Epic / Feature
+    - Items: Task / Bug / Sub-task / Subtarea / demás tipos
     """
-    PARENT_TYPES = {"Spike", "Historia de Usuario", "Epic", "Task", "Story", "Feature"}
-    ITEM_TYPES = {"Sub", "Subtarea", "Bug", "Sub-task"}
+    PARENT_TYPES = {"Story", "Historia de Usuario", "Epic", "Feature"}
 
     parents = [i for i in issues if i.t in PARENT_TYPES]
-    items = [i for i in issues if i.t in ITEM_TYPES]
+    items   = [i for i in issues if i.t not in PARENT_TYPES]
 
-    # If everything is items (no Sub-tasks), treat all as items
+    # Si no hay ninguno en ninguna categoría, poner todo como items
     if not items and not parents:
         items = issues
-    elif not items:
-        items = parents
-        parents = []
 
     base_config = {
         "sprint": sprint_num,
