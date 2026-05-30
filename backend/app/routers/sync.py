@@ -381,13 +381,13 @@ async def _run_issues_sync_background(
                 hours=hours,
             )
 
-        # Store status
+        # Store status — incluye "error" del except exterior de run_full_sync
         last_issues_sync_status[project_key] = {
             "status": result.get("status", "unknown"),
             "total_processed": result.get("total_processed", 0),
             "total_upserted": result.get("total_upserted", 0),
             "total_errors": result.get("total_errors", 0),
-            "first_error": result.get("first_error"),
+            "first_error": result.get("first_error") or result.get("error"),
             "sync_type": result.get("sync_type", "UNKNOWN"),
             "started_at": result.get("started_at"),
             "completed_at": result.get("completed_at"),
