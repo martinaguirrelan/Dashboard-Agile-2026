@@ -306,7 +306,9 @@ class JiraSyncService:
             }
 
         except Exception as e:
-            logger.error(f"❌ Full sync failed for {project_key}: {e}")
+            import traceback
+            err_detail = f"{type(e).__name__}: {e}\n{traceback.format_exc()}"
+            logger.error(f"❌ Full sync failed for {project_key}: {err_detail}")
             return {
                 "project_key": project_key,
                 "sync_type": "FULL",
@@ -316,7 +318,8 @@ class JiraSyncService:
                 "started_at": start_time,
                 "completed_at": datetime.now(),
                 "status": "failed",
-                "error": str(e),
+                "first_error": err_detail,
+                "error": err_detail,
             }
 
     @staticmethod
