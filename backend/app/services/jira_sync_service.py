@@ -149,20 +149,23 @@ class JiraSyncService:
     @staticmethod
     async def fetch_jira_issues(
         project_key: str,
-        start_at: int = 0,
+        next_page_token: Optional[str] = None,
         max_results: int = 50,
     ) -> tuple:
-        """Fetch issues from Jira API"""
+        """Fetch issues from Jira API usando cursor-based pagination (nextPageToken)."""
         jql = JiraSyncService.JQL_QUERY.format(project_key=project_key)
         url = f"{settings.jira_url}/rest/api/3/search/jql"
 
         params = {
             "jql": jql,
             "maxResults": max_results,
-            "fields": ["key", "issuetype", "summary", "assignee", "status", "priority", "labels", "duedate", "created", "updated", "resolution", "customfield_10020", "parent"]
+            "fields": ["key", "issuetype", "summary", "assignee", "status", "priority",
+                       "labels", "duedate", "created", "updated", "resolution",
+                       "customfield_10020", "parent"]
         }
-        if start_at > 0:
-            params["startAt"] = start_at
+        # cursor-based pagination — solo incluir si hay token de página siguiente
+        if next_page_token:
+            params["nextPageToken"] = next_page_token
 
         async with httpx.AsyncClient(timeout=30.0) as client:
             try:
@@ -174,10 +177,9 @@ class JiraSyncService:
                 response.raise_for_status()
                 data = response.json()
                 issues = data.get("issues", [])
-                # Jira API v3 usa "isLast" para paginación; "total" puede ser 0
                 is_last = data.get("isLast", True)
-                total = data.get("total", len(issues))
-                return issues, is_last, total
+                next_token = data.get("nextPageToken")
+                return issues, is_last, next_token
             except httpx.HTTPError as e:
                 logger.error(f"❌ Jira API error: {e}")
                 raise
@@ -257,13 +259,15 @@ class JiraSyncService:
         total_errors = 0
 
         try:
-            start_at = 0
+            next_page_token = None
+            page_num = 0
             max_results = 50
 
             while True:
-                issues, is_last, total = await JiraSyncService.fetch_jira_issues(
+                page_num += 1
+                issues, is_last, next_page_token = await JiraSyncService.fetch_jira_issues(
                     project_key,
-                    start_at=start_at,
+                    next_page_token=next_page_token,
                     max_results=max_results,
                 )
 
@@ -280,12 +284,10 @@ class JiraSyncService:
                 total_upserted += result["total_upserted"]
                 total_errors += result["total_errors"]
 
-                logger.info(f"  📄 Página {start_at//max_results + 1}: {len(issues)} issues (isLast={is_last})")
+                logger.info(f"  📄 Página {page_num}: {len(issues)} issues (isLast={is_last})")
 
-                if is_last or not issues:
+                if is_last or not next_page_token:
                     break
-
-                start_at += max_results
 
             duration = (datetime.now() - start_time).total_seconds()
 
